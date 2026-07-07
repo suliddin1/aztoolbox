@@ -7,7 +7,7 @@ import { tools } from "@/lib/tools";
 
 const feedbackTypes = [
   "Problem bildirmək",
-  "Yeni tool təklifi",
+  "Yeni alət təklifi",
   "Dizayn/istifadə rahatlığı",
   "Digər",
 ];
@@ -54,7 +54,7 @@ export function FeedbackComposer() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <div className="grid gap-4">
           <div>
-            <label className="mb-2 block text-sm font-semibold">Feedback type</label>
+            <label className="mb-2 block text-sm font-semibold">Feedback növü</label>
             <select
               value={type}
               onChange={(event) => {
@@ -72,7 +72,7 @@ export function FeedbackComposer() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-semibold">Tool adı</label>
+            <label className="mb-2 block text-sm font-semibold">Alət adı</label>
             <select
               value={tool}
               onChange={(event) => {

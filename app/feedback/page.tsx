@@ -3,10 +3,10 @@ import { FeedbackComposer } from "@/components/FeedbackComposer";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
-  title: "Feedback və tool təklifi | AzToolbox",
-  description: "AzToolbox üçün problem, təklif və yeni tool ideyası mətni hazırlayın.",
+  title: "Feedback və alət təklifi | AzToolbox",
+  description: "AzToolbox üçün problem, təklif və yeni alət ideyası mətni hazırlayın.",
   path: "/feedback",
-  keywords: ["AzToolbox feedback", "tool təklifi", "problem bildirmək"],
+  keywords: ["AzToolbox feedback", "alət təklifi", "problem bildirmək"],
 });
 
 export default function FeedbackPage() {
@@ -15,10 +15,10 @@ export default function FeedbackPage() {
       <div className="mb-8 max-w-3xl">
         <p className="text-sm font-semibold text-accent-strong">Feedback</p>
         <h1 className="mt-2 text-4xl font-semibold tracking-normal">
-          Feedback və tool təklifi
+          Feedback və alət təklifi
         </h1>
         <p className="mt-4 text-lg leading-8 text-muted">
-          Problem bildirmək, yeni tool təklif etmək və ya istifadə rahatlığı ilə
+          Problem bildirmək, yeni alət təklif etmək və ya istifadə rahatlığı ilə
           bağlı qeyd hazırlamaq üçün bu composer-dən istifadə edin. Mesaj serverə
           göndərilmir.
         </p>

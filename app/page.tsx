@@ -3,7 +3,7 @@ import { HomeDiscovery } from "@/components/HomeDiscovery";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata = createMetadata({
-  title: "AzToolbox - Azərbaycanca gündəlik alətlər",
+  title: "AzToolbox — Azərbaycanca gündəlik alətlər",
   description:
     "CV, PDF, şəkil, WhatsApp, QR, qəbz və mətn alətləri - qeydiyyatsız, reklamsız və mümkün olduqca brauzerində.",
   path: "/",

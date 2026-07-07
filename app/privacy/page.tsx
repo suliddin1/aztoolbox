@@ -73,7 +73,7 @@ export default function PrivacyPage() {
         <section className="rounded-lg border border-line bg-surface p-6 shadow-sm">
           <h2 className="text-2xl font-semibold">Əlaqə və feedback</h2>
           <p className="mt-3 max-w-4xl leading-7 text-muted">
-            Problem bildirmək, yeni tool təklif etmək və ya məxfilik mesajı ilə
+            Problem bildirmək, yeni alət təklif etmək və ya məxfilik mesajı ilə
             bağlı qeyd göndərmək üçün feedback composer-dən istifadə edə bilərsiniz.
           </p>
           <Link

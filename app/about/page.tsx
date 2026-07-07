@@ -5,7 +5,7 @@ import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
   title: "AzToolbox nədir? | AzToolbox",
-  description: "AzToolbox haqqında: Azərbaycan üçün pulsuz, praktik və sürətli mini-tool platforması.",
+  description: "AzToolbox haqqında: Azərbaycan üçün pulsuz, praktik və sürətli mini alət platforması.",
   path: "/about",
   keywords: ["AzToolbox haqqında", "Azərbaycan mini alətlər", "pulsuz alətlər"],
 });
@@ -47,7 +47,7 @@ export default function AboutPage() {
           AzToolbox nədir?
         </h1>
         <p className="mt-4 text-lg leading-8 text-muted">
-          AzToolbox Azərbaycan-first mini-tool platformasıdır. Məqsəd pulsuz,
+          AzToolbox Azərbaycan-first mini alət platformasıdır. Məqsəd pulsuz,
           praktik və sürətli alətlərlə gündəlik rəqəmsal işləri daha rahat
           etməkdir.
         </p>
@@ -72,7 +72,7 @@ export default function AboutPage() {
               "Azərbaycan dili və lokal ehtiyaclara fokus",
               "Qeydiyyatsız istifadə",
               "Mümkün olduqca client-side processing",
-              "Sadə və sürətli tool-lar",
+              "Sadə və sürətli alətlər",
             ].map((item) => (
               <div key={item} className="rounded-md border border-line bg-surface-soft p-4 text-sm font-medium">
                 {item}
