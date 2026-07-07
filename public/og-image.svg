@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="AzToolbox preview">
+  <rect width="1200" height="630" fill="#f8faf9"/>
+  <circle cx="1010" cy="110" r="240" fill="#e4f4ee"/>
+  <circle cx="120" cy="540" r="220" fill="#eef7f3"/>
+  <rect x="90" y="80" width="1020" height="470" rx="36" fill="#ffffff" stroke="#dde5e0" stroke-width="2"/>
+  <rect x="140" y="135" width="72" height="72" rx="16" fill="#0b6fe8"/>
+  <text x="160" y="181" fill="#ffffff" font-family="Arial, sans-serif" font-size="28" font-weight="700">Az</text>
+  <text x="235" y="170" fill="#17211d" font-family="Arial, sans-serif" font-size="54" font-weight="800">Toolbox</text>
+  <text x="142" y="270" fill="#17211d" font-family="Arial, sans-serif" font-size="58" font-weight="800">Azərbaycanca gündəlik işlər</text>
+  <text x="142" y="335" fill="#17211d" font-family="Arial, sans-serif" font-size="58" font-weight="800">üçün mini alətlər</text>
+  <text x="145" y="405" fill="#63716b" font-family="Arial, sans-serif" font-size="25">Qeydiyyatsız, sürətli və mümkün olduqca brauzerinizdə.</text>
+  <g font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0d5c4a">
+    <rect x="145" y="455" width="82" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="169" y="487">PDF</text>
+    <rect x="245" y="455" width="96" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="267" y="487">Şəkil</text>
+    <rect x="359" y="455" width="68" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="377" y="487">CV</text>
+    <rect x="445" y="455" width="68" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="462" y="487">QR</text>
+    <rect x="531" y="455" width="142" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="552" y="487">WhatsApp</text>
+    <rect x="691" y="455" width="92" height="48" rx="12" fill="#e4f4ee" stroke="#c8ded4"/>
+    <text x="713" y="487">Mətn</text>
+  </g>
+</svg>
