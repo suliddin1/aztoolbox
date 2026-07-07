@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fbf9;
-  --foreground: #17211d;
+  --background: #fbfcff;
+  --foreground: #171b22;
   --surface: #ffffff;
-  --surface-soft: #f1f6f3;
-  --muted: #63716b;
-  --line: #dce5df;
-  --accent: #12715b;
-  --accent-strong: #075844;
-  --accent-soft: #e6f4ee;
+  --surface-soft: #f3f6fb;
+  --muted: #586174;
+  --line: #d8e0ec;
+  --accent: #0b6fe8;
+  --accent-strong: #075abf;
+  --accent-soft: #e8f1ff;
   --danger: #b42318;
 }
 
@@ -39,10 +39,14 @@ html {
 body {
   min-width: 320px;
   background:
-    radial-gradient(circle at 12% 0%, rgba(18, 113, 91, 0.08), transparent 32rem),
-    var(--background);
+    radial-gradient(circle at 12% 8%, rgba(96, 165, 250, 0.34), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.28), transparent 36%),
+    radial-gradient(circle at 72% 52%, rgba(34, 211, 238, 0.22), transparent 40%),
+    radial-gradient(circle at 18% 82%, rgba(251, 146, 60, 0.16), transparent 36%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 42%, #f4f7ff 100%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   letter-spacing: 0;
 }
 
@@ -70,4 +74,112 @@ textarea:focus-visible {
 ::selection {
   background: var(--accent-soft);
   color: var(--accent-strong);
+}
+
+.ambient-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(96, 165, 250, 0.30), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.26), transparent 36%),
+    radial-gradient(circle at 72% 52%, rgba(34, 211, 238, 0.20), transparent 40%),
+    radial-gradient(circle at 18% 82%, rgba(251, 146, 60, 0.14), transparent 36%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 42%, #f4f7ff 100%);
+}
+
+.ambient-blob {
+  position: absolute;
+  width: 720px;
+  height: 720px;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform, opacity;
+}
+
+.ambient-blob-1 {
+  top: -220px;
+  left: -180px;
+  background: rgba(96, 165, 250, 0.42);
+  animation: ambientFloatOne 24s ease-in-out infinite alternate;
+}
+
+.ambient-blob-2 {
+  top: -180px;
+  right: -220px;
+  background: rgba(168, 85, 247, 0.34);
+  animation: ambientFloatTwo 30s ease-in-out infinite alternate;
+}
+
+.ambient-blob-3 {
+  top: 38%;
+  right: 8%;
+  background: rgba(34, 211, 238, 0.26);
+  animation: ambientFloatThree 28s ease-in-out infinite alternate;
+}
+
+.ambient-blob-4 {
+  bottom: -260px;
+  left: 12%;
+  background: rgba(251, 146, 60, 0.20);
+  animation: ambientFloatFour 34s ease-in-out infinite alternate;
+}
+
+.ambient-background-wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+@keyframes ambientFloatOne {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.46;
+  }
+  to {
+    transform: translate3d(120px, 80px, 0) scale(1.18);
+    opacity: 0.62;
+  }
+}
+
+@keyframes ambientFloatTwo {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.05);
+    opacity: 0.42;
+  }
+  to {
+    transform: translate3d(-140px, 90px, 0) scale(1.22);
+    opacity: 0.58;
+  }
+}
+
+@keyframes ambientFloatThree {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.36;
+  }
+  to {
+    transform: translate3d(-80px, -120px, 0) scale(1.16);
+    opacity: 0.52;
+  }
+}
+
+@keyframes ambientFloatFour {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.08);
+    opacity: 0.28;
+  }
+  to {
+    transform: translate3d(90px, -100px, 0) scale(1.24);
+    opacity: 0.44;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob {
+    animation: none;
+  }
 }

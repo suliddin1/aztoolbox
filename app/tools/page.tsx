@@ -12,14 +12,14 @@ export const metadata: Metadata = createMetadata({
 
 export default function ToolsPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
-      <div className="mb-8">
+    <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto mb-10 max-w-3xl text-center">
         <p className="text-sm font-semibold text-accent-strong">AzToolbox kataloqu</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-normal sm:text-4xl">
-          Alətlər
+        <h1 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
+          Bütün alətlər
         </h1>
-        <p className="mt-3 max-w-2xl leading-7 text-muted">
-          Axtarın, kateqoriya seçin və gündəlik iş üçün lazım olan aləti açın.
+        <p className="mt-4 leading-8 text-muted">
+          Məhsuldarlığınızı artırmaq üçün lazım olan rəqəmsal alətlər bir yerdə.
         </p>
       </div>
       <ToolsIndex />

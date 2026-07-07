@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BackgroundAtmosphere } from "@/components/layout/BackgroundAtmosphere";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { createMetadata } from "@/lib/seo";
@@ -42,10 +43,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="az" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="flex min-h-screen flex-col antialiased">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="relative flex min-h-screen flex-col overflow-x-hidden antialiased">
+        <BackgroundAtmosphere />
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );
