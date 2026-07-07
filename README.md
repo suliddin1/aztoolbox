@@ -1,10 +1,18 @@
 # AzToolbox
 
-Azerbaijan-first free mini-tool platform for daily digital tasks.
+AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pulsuz mini alətlər platformasıdır. Məqsəd CV, PDF, şəkil, QR, WhatsApp, qəbz, mətn və tələbə işlərini qeydiyyatsız, sürətli və mümkün olduqca brauzerdə həll etməkdir.
 
-AzToolbox is a practical public utility website with small tools for CV, PDF, image, text, student, business, QR, WhatsApp, and Azerbaijani language workflows. The UI is Azerbaijani-first and the tools are designed to be fast, simple, and useful without login.
+## Xüsusiyyətlər
 
-## Current Tools
+- Azərbaycanca və lokal ehtiyaclara uyğun interfeys
+- Qeydiyyatsız istifadə
+- Reklamsız və ödənişsiz v0.1 buraxılışı
+- PDF, şəkil və mətn işləri üçün praktik alətlər
+- Favorit və son istifadə edilən alətlər üçün localStorage dəstəyi
+- Mümkün olduğu qədər client-side emal
+- Mobil və desktop üçün responsive UI
+
+## Mövcud alətlər
 
 ### Azərbaycan dili
 
@@ -16,10 +24,15 @@ AzToolbox is a practical public utility website with small tools for CV, PDF, im
 - Şəkil alətləri toolkit
 - Şəkil ölçüləndirici
 - Şəkil sıxışdırıcı
+- CV şəkli hazırlayıcı
+- Şəkil format çevirici
 
 ### PDF alətləri
 
 - PDF alətləri toolkit
+- PDF birləşdirmə
+- PDF səhifə ayırma
+- PDF səhifələrini təşkil etmə
 - Şəkli PDF et
 
 ### CV və karyera
@@ -49,68 +62,67 @@ AzToolbox is a practical public utility website with small tools for CV, PDF, im
 
 - QR kod generator
 
-## Key Principles
+## Texnologiyalar
 
-- Free
-- No login
-- Client-side where possible
-- Privacy-first
-- Azerbaijani UI
-
-## Tech Stack
-
-- Next.js
+- Next.js App Router
 - TypeScript
 - Tailwind CSS
-- jsPDF for client-side PDF generation
-- pdf-lib for client-side PDF operations
-- qrcode for QR generation
-- Browser canvas APIs for image processing
+- React
+- pdf-lib
+- jsPDF
+- qrcode
+- Browser canvas APIs
 
-## Local Setup
+## Lokal quraşdırma
 
-Install dependencies:
+Asılılıqları quraşdır:
 
 ```bash
 npm install
 ```
 
-Start the development server:
+Development server-i başlad:
 
 ```bash
 npm run dev
 ```
 
-Open:
+Brauzerdə aç:
 
 ```text
 http://localhost:3000
 ```
 
-Build for production:
+Production build:
 
 ```bash
 npm run build
 ```
 
-Run lint:
+Lint:
 
 ```bash
 npm run lint
 ```
 
+## Məxfilik
+
+AzToolbox hazırkı versiyada backend, database, authentication, analytics, reklam və ödəniş sistemi istifadə etmir. Fayl emalı mümkün olduğu qədər istifadəçinin brauzerində aparılır.
+
+Favoritlər və son istifadə edilən alətlər yalnız brauzerin localStorage sahəsində saxlanılır. Bu məlumatlar login hesabı ilə sinxronlaşdırılmır.
+
 ## Deployment
 
-AzToolbox is built with the Next.js App Router and is Vercel-ready.
+Layihə Next.js App Router üzərində qurulub və Vercel kimi Next.js dəstəkləyən platformalara deploy üçün hazırdır.
 
-## Privacy Note
+Əgər production URL istifadə olunursa, metadata və sitemap üçün `NEXT_PUBLIC_SITE_URL` environment dəyişəni təyin edilə bilər.
 
-Files are processed in the browser where possible and are not intentionally uploaded to a server. Some local preferences, such as favorites and recently used tools, may be stored in the user's browser localStorage.
+## Security qeydi
 
-## Roadmap
+Bu repoda API key, token, database connection string və ya şəxsi secret saxlanılmamalıdır. `.env*`, build output-ları, log faylları və dependency qovluqları `.gitignore` ilə istisna edilib.
 
-- Better UI polish
-- More local tools
-- SEO improvements
-- PWA support
-- Accessibility improvements
+## Status
+
+Hazırkı branch: `release-v0.1`
+
+Buraxılış tipi: public v0.1
