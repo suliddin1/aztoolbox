@@ -119,7 +119,12 @@ export function ImageResizer() {
       return;
     }
 
-    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 50 || height < 50) {
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width < 50 ||
+      height < 50
+    ) {
       setError("Ölçü ən azı 50 x 50 olmalıdır.");
       return;
     }
@@ -163,7 +168,9 @@ export function ImageResizer() {
           }
 
           replaceResultUrl(URL.createObjectURL(blob));
-          setSuccess("Şəkil hazırdır. Dəyişiklik edib yenidən hazırlaya bilərsiniz.");
+          setSuccess(
+            "Şəkil hazırdır. Dəyişiklik edib yenidən hazırlaya bilərsiniz.",
+          );
           setIsProcessing(false);
         },
         format,
@@ -228,7 +235,9 @@ export function ImageResizer() {
           ) : null}
 
           <div>
-            <label className="mb-2 block text-sm font-semibold">Hazır ölçü</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Hazır ölçü
+            </label>
             <select
               value={presetIndex}
               onChange={(event) => {
@@ -261,7 +270,9 @@ export function ImageResizer() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Hündürlük</label>
+                <label className="mb-2 block text-sm font-semibold">
+                  Hündürlük
+                </label>
                 <input
                   type="number"
                   min={50}
@@ -345,7 +356,9 @@ export function ImageResizer() {
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
         <p className="mt-4 text-sm leading-6 text-muted">
           Şəkil yalnız brauzerinizdə emal olunur. Eyni orijinal şəkli saxlayıb
           ölçü, format, keyfiyyət və crop rejimini dəyişərək yenidən hazırlaya
@@ -359,7 +372,11 @@ export function ImageResizer() {
           <div className="mt-3 flex min-h-64 items-center justify-center rounded-md border border-line bg-surface-soft p-3">
             {sourceUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={sourceUrl} alt="Seçilmiş şəkil" className="max-h-80 max-w-full rounded-md object-contain" />
+              <img
+                src={sourceUrl}
+                alt="Seçilmiş şəkil"
+                className="max-h-80 max-w-full rounded-md object-contain"
+              />
             ) : (
               <p className="text-center text-muted">
                 Şəkil seçdikdən sonra preview burada görünəcək.
@@ -385,7 +402,11 @@ export function ImageResizer() {
           <div className="mt-3 flex min-h-64 items-center justify-center rounded-md border border-line bg-surface-soft p-3">
             {resultUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={resultUrl} alt="Ölçüləndirilmiş şəkil" className="max-h-80 max-w-full rounded-md object-contain" />
+              <img
+                src={resultUrl}
+                alt="Ölçüləndirilmiş şəkil"
+                className="max-h-80 max-w-full rounded-md object-contain"
+              />
             ) : (
               <p className="text-center text-muted">
                 Şəkli hazırladıqdan sonra nəticə burada görünəcək.

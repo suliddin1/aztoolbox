@@ -3,6 +3,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import type { ComponentType } from "react";
 import { RecentToolTracker } from "@/components/RecentToolTracker";
+import { NewToolRenderer } from "@/components/tools/NewToolRenderer";
 import { AzTransliterationTool } from "@/components/tools/AzTransliterationTool";
 import { AzerbaijaniKeyboardFixer } from "@/components/tools/AzerbaijaniKeyboardFixer";
 import { CvBuilder } from "@/components/tools/CvBuilder";
@@ -24,9 +25,14 @@ import { WhatsappLinkGenerator } from "@/components/tools/WhatsappLinkGenerator"
 import { WordCounter } from "@/components/tools/WordCounter";
 import { createMetadata, createToolMetadata } from "@/lib/seo";
 import { absoluteUrl, siteConfig } from "@/lib/site";
+import {
+  existingRelatedOverrides,
+  isNewToolSlug,
+  toolGuides,
+} from "@/lib/tool-content";
 import { getTool, tools, type ToolSlug } from "@/lib/tools";
 
-const toolComponents: Record<ToolSlug, ComponentType> = {
+const toolComponents: Partial<Record<ToolSlug, ComponentType>> = {
   "az-keyboard-fixer": AzerbaijaniKeyboardFixer,
   "image-tools": ImageTools,
   "image-resizer": ImageResizer,
@@ -56,9 +62,25 @@ const fileToolSlugs: ToolSlug[] = [
   "image-to-pdf",
   "pdf-tools",
   "invoice-generator",
+  "pdf-to-image",
+  "pdf-watermark",
+  "pdf-page-numbers",
+  "pdf-signature",
+  "pdf-metadata-cleaner",
+  "image-metadata-remover",
+  "color-palette-extractor",
+  "favicon-generator",
+  "svg-optimizer",
+  "qr-scanner",
+  "base64",
 ];
 
-const oldPdfRoutes = new Set(["pdf-merge", "pdf-split", "pdf-organizer", "pdf-organize"]);
+const oldPdfRoutes = new Set([
+  "pdf-merge",
+  "pdf-split",
+  "pdf-organizer",
+  "pdf-organize",
+]);
 const toolkitSlugs = new Set<ToolSlug>(["pdf-tools", "image-tools"]);
 
 export function generateStaticParams() {
@@ -103,8 +125,10 @@ export default async function ToolPage(props: PageProps<"/tools/[slug]">) {
   }
 
   const ToolComponent = toolComponents[tool.slug];
+  const guide = isNewToolSlug(tool.slug) ? toolGuides[tool.slug] : null;
   const usesFiles = fileToolSlugs.includes(tool.slug);
-  const privacyText = "Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.";
+  const privacyText =
+    "Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.";
   const subtitle =
     tool.slug === "pdf-tools"
       ? "PDF birləşdir, səhifə ayır, səhifələri sil, döndər və sırala — hamısı brauzerində."
@@ -126,17 +150,46 @@ export default async function ToolPage(props: PageProps<"/tools/[slug]">) {
       url: absoluteUrl("/"),
     },
   };
+  const faqJsonLd = guide
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: guide.faqs.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+      }
+    : null;
 
+  const configuredRelatedSlugs =
+    guide?.related ?? existingRelatedOverrides[tool.slug];
+  const configuredRelatedTools =
+    configuredRelatedSlugs
+      ?.map((relatedSlug) => tools.find((item) => item.slug === relatedSlug))
+      .filter((item): item is (typeof tools)[number] => Boolean(item)) ?? [];
   const sameCategoryTools = tools.filter(
     (item) => item.category === tool.category && item.slug !== tool.slug,
   );
   const fallbackRelatedTools = tools.filter(
     (item) =>
       item.slug !== tool.slug &&
-      !sameCategoryTools.some((relatedTool) => relatedTool.slug === item.slug) &&
+      !sameCategoryTools.some(
+        (relatedTool) => relatedTool.slug === item.slug,
+      ) &&
       (item.isFeatured || item.isPopular),
   );
-  const relatedTools = [...sameCategoryTools, ...fallbackRelatedTools].slice(0, 3);
+  const relatedTools = [
+    ...configuredRelatedTools,
+    ...sameCategoryTools,
+    ...fallbackRelatedTools,
+  ]
+    .filter(
+      (item, index, source) =>
+        item.slug !== tool.slug &&
+        source.findIndex((candidate) => candidate.slug === item.slug) === index,
+    )
+    .slice(0, 3);
   const ToolIcon = tool.icon;
   const badges = [
     usesFiles ? "Fayllar lokal emal olunur" : "Brauzerdə işləyir",
@@ -151,6 +204,12 @@ export default async function ToolPage(props: PageProps<"/tools/[slug]">) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {faqJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      ) : null}
       <div className="mb-7 rounded-3xl border border-line bg-white/88 p-5 shadow-[0_18px_55px_rgba(15,23,42,0.07)] backdrop-blur sm:p-7">
         <Link
           href="/tools"
@@ -202,17 +261,78 @@ export default async function ToolPage(props: PageProps<"/tools/[slug]">) {
       <section className="grid gap-4">
         <div>
           <p className="text-sm font-semibold text-accent-strong">İş sahəsi</p>
-          <h2 className="mt-2 text-2xl font-bold">Məlumat daxil et və nəticəni hazırla</h2>
+          <h2 className="mt-2 text-2xl font-bold">
+            Məlumat daxil et və nəticəni hazırla
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            Lazım olan məlumatı daxil edin, seçimləri tənzimləyin və nəticəni çıxış panelində yoxlayın.
+            Lazım olan məlumatı daxil edin, seçimləri tənzimləyin və nəticəni
+            çıxış panelində yoxlayın.
           </p>
         </div>
-        <ToolComponent />
+        {isNewToolSlug(tool.slug) ? (
+          <NewToolRenderer slug={tool.slug} />
+        ) : ToolComponent ? (
+          <ToolComponent />
+        ) : null}
       </section>
+      {guide ? (
+        <>
+          <section className="mt-10 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-2xl border border-line bg-white/88 p-5 shadow-sm sm:p-6">
+              <p className="text-sm font-semibold text-accent-strong">
+                İstifadə qaydası
+              </p>
+              <h2 className="mt-2 text-2xl font-bold">Üç addımda nəticə</h2>
+              <ol className="mt-5 grid gap-4">
+                {guide.steps.map((step, index) => (
+                  <li
+                    key={step}
+                    className="flex gap-3 text-sm leading-6 text-muted"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-soft font-bold text-accent">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <aside className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:p-6">
+              <p className="font-bold">Vacib məhdudiyyət</p>
+              <p className="mt-2">{guide.limitation}</p>
+            </aside>
+          </section>
+          <section className="mt-10">
+            <p className="text-sm font-semibold text-accent-strong">
+              Tez-tez verilən suallar
+            </p>
+            <h2 className="mt-2 text-2xl font-bold">Alət haqqında suallar</h2>
+            <div className="mt-5 grid gap-3 lg:grid-cols-2">
+              {guide.faqs.map((item) => (
+                <details
+                  key={item.question}
+                  className="group rounded-2xl border border-line bg-white/88 p-5 shadow-sm"
+                >
+                  <summary className="cursor-pointer font-bold marker:text-accent">
+                    {item.question}
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-muted">
+                    {item.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : null}
       <section className="mt-10">
         <div className="mb-4">
-          <p className="text-sm font-semibold text-accent-strong">Oxşar alətlər</p>
-          <h2 className="mt-2 text-2xl font-bold">Davam etmək üçün faydalı alətlər</h2>
+          <p className="text-sm font-semibold text-accent-strong">
+            Oxşar alətlər
+          </p>
+          <h2 className="mt-2 text-2xl font-bold">
+            Davam etmək üçün faydalı alətlər
+          </h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {relatedTools.map((item) => {
@@ -227,7 +347,9 @@ export default async function ToolPage(props: PageProps<"/tools/[slug]">) {
                   <Icon size={18} />
                 </span>
                 <p className="mt-4 font-bold">{item.title}</p>
-                <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {item.description}
+                </p>
               </Link>
             );
           })}

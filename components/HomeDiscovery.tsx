@@ -12,6 +12,7 @@ import {
   recentToolsStorageKey,
   toolsFromSlugs,
 } from "@/lib/tool-storage";
+import { homeNewToolSlugs, isNewToolSlug } from "@/lib/tool-content";
 import {
   getToolsByCategory,
   searchTools,
@@ -50,11 +51,24 @@ export function HomeDiscovery() {
   const [recentSlugs] = useToolSlugs(recentToolsStorageKey);
 
   const results = useMemo(() => searchTools(query), [query]);
-  const favoriteTools = useMemo(() => toolsFromSlugs(favoriteSlugs), [favoriteSlugs]);
+  const favoriteTools = useMemo(
+    () => toolsFromSlugs(favoriteSlugs),
+    [favoriteSlugs],
+  );
   const recentTools = useMemo(() => toolsFromSlugs(recentSlugs), [recentSlugs]);
   const featuredTools = useMemo(() => toolsByOrder(featuredOrder), []);
   const popularTools = useMemo(() => toolsByOrder(popularOrder), []);
-  const groupedTools = useMemo(() => getToolsByCategory(), []);
+  const newTools = useMemo(() => toolsByOrder([...homeNewToolSlugs]), []);
+  const groupedTools = useMemo(
+    () =>
+      getToolsByCategory()
+        .map((group) => ({
+          ...group,
+          tools: group.tools.filter((tool) => !isNewToolSlug(tool.slug)),
+        }))
+        .filter((group) => group.tools.length > 0),
+    [],
+  );
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -139,12 +153,43 @@ export function HomeDiscovery() {
         </section>
       ) : null}
 
-      <section id="tools" className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <section
+        id="tools"
+        className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+      >
+        <SectionHeader
+          eyebrow="Yeni"
+          title="Yeni əlavə olunan alətlər"
+          description="PDF, QR, Azərbaycan dili və developer işləri üçün altı yeni lokal alət. Digər yeniliklər tam kataloqdadır."
+          action={
+            <Link
+              href="/tools"
+              className="text-sm font-semibold text-accent-strong hover:underline"
+            >
+              Bütün yeni alətlər
+            </Link>
+          }
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {newTools.map((tool) => (
+            <ToolListItem key={tool.slug} tool={tool} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <SectionHeader
           eyebrow="Seçilmiş"
           title="Seçilmiş Alətlər"
           description="Azərbaycan dili, CV, karyera və gündəlik biznes işləri üçün ən vacib alətlər."
-          action={<Link href="/tools" className="text-sm font-semibold text-accent-strong hover:underline">Bütün alətlər</Link>}
+          action={
+            <Link
+              href="/tools"
+              className="text-sm font-semibold text-accent-strong hover:underline"
+            >
+              Bütün alətlər
+            </Link>
+          }
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featuredTools.map((tool) => (
@@ -168,7 +213,10 @@ export function HomeDiscovery() {
         </div>
       </section>
 
-      <section id="categories" className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <section
+        id="categories"
+        className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+      >
         <SectionHeader
           eyebrow="Kateqoriyalar"
           title="Bütün alətlər"
@@ -176,7 +224,10 @@ export function HomeDiscovery() {
         />
         <div className="grid gap-4 lg:grid-cols-2">
           {groupedTools.map(({ category, tools: categoryTools }) => (
-              <div key={category} className="rounded-2xl border border-line bg-white/82 p-5 shadow-sm shadow-slate-200/50">
+            <div
+              key={category}
+              className="rounded-2xl border border-line bg-white/82 p-5 shadow-sm shadow-slate-200/50"
+            >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h3 className="text-lg font-semibold">{category}</h3>
                 <span className="rounded-md border border-line bg-surface-soft px-2.5 py-1 text-xs font-medium text-muted">

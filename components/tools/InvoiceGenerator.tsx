@@ -102,7 +102,10 @@ export function InvoiceGenerator() {
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState(makeInvoiceNumber);
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + itemTotal(item), 0), [items]);
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + itemTotal(item), 0),
+    [items],
+  );
 
   function updateItem(id: string, patch: Partial<LineItem>) {
     setStatus("");
@@ -111,7 +114,11 @@ export function InvoiceGenerator() {
     );
   }
 
-  function updateNumberItem(id: string, field: "quantity" | "price", value: string) {
+  function updateNumberItem(
+    id: string,
+    field: "quantity" | "price",
+    value: string,
+  ) {
     const normalized = normalizeNumberInput(value);
     if (normalized === null) {
       return;
@@ -127,7 +134,9 @@ export function InvoiceGenerator() {
   }
 
   function removeItem(id: string) {
-    setItems((current) => (current.length === 1 ? current : current.filter((item) => item.id !== id)));
+    setItems((current) =>
+      current.length === 1 ? current : current.filter((item) => item.id !== id),
+    );
     setStatus("");
   }
 
@@ -152,11 +161,22 @@ export function InvoiceGenerator() {
       return "Bütün sətirlərdə xidmət / məhsul adını daxil edin.";
     }
 
-    if (items.some((item) => parsePositiveNumber(item.quantity) < 0 || parsePositiveNumber(item.price) < 0)) {
+    if (
+      items.some(
+        (item) =>
+          parsePositiveNumber(item.quantity) < 0 ||
+          parsePositiveNumber(item.price) < 0,
+      )
+    ) {
       return "Miqdar və qiymət mənfi ola bilməz.";
     }
 
-    if (items.some((item) => !item.quantity.trim() || parsePositiveNumber(item.quantity) <= 0)) {
+    if (
+      items.some(
+        (item) =>
+          !item.quantity.trim() || parsePositiveNumber(item.quantity) <= 0,
+      )
+    ) {
       return "Miqdar 0-dan böyük olmalıdır.";
     }
 
@@ -255,7 +275,11 @@ export function InvoiceGenerator() {
     ctx.fillStyle = "#63716b";
     ctx.fillText("Bu sənəd AzToolbox ilə brauzerdə yaradılıb.", 80, 1660);
 
-    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+    });
     const image = canvas.toDataURL("image/png");
     pdf.addImage(image, "PNG", 0, 0, 595.28, 841.89);
     pdf.save("aztoolbox-invoice.pdf");
@@ -267,7 +291,9 @@ export function InvoiceGenerator() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-semibold">Satıcı adı</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Satıcı adı
+            </label>
             <input
               value={seller}
               onChange={(event) => {
@@ -279,7 +305,9 @@ export function InvoiceGenerator() {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Müştəri adı</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Müştəri adı
+            </label>
             <input
               value={customer}
               onChange={(event) => {
@@ -328,34 +356,47 @@ export function InvoiceGenerator() {
           </div>
           <div className="grid gap-3">
             {items.map((item, index) => (
-              <div key={item.id} className="grid gap-3 rounded-md border border-line bg-surface-soft p-3 lg:grid-cols-[1fr_110px_140px_40px]">
+              <div
+                key={item.id}
+                className="grid gap-3 rounded-md border border-line bg-surface-soft p-3 lg:grid-cols-[1fr_110px_140px_40px]"
+              >
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-muted">
                     Xidmət / məhsul adı
                   </label>
                   <input
                     value={item.name}
-                    onChange={(event) => updateItem(item.id, { name: event.target.value })}
+                    onChange={(event) =>
+                      updateItem(item.id, { name: event.target.value })
+                    }
                     placeholder={`Sətir ${index + 1}`}
                     className="h-10 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-muted">Miqdar</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted">
+                    Miqdar
+                  </label>
                   <input
                     inputMode="decimal"
                     value={item.quantity}
-                    onChange={(event) => updateNumberItem(item.id, "quantity", event.target.value)}
+                    onChange={(event) =>
+                      updateNumberItem(item.id, "quantity", event.target.value)
+                    }
                     placeholder="1"
                     className="h-10 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-muted">Qiymət</label>
+                  <label className="mb-1 block text-xs font-semibold text-muted">
+                    Qiymət
+                  </label>
                   <input
                     inputMode="decimal"
                     value={item.price}
-                    onChange={(event) => updateNumberItem(item.id, "price", event.target.value)}
+                    onChange={(event) =>
+                      updateNumberItem(item.id, "price", event.target.value)
+                    }
                     placeholder="0.00"
                     className="h-10 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
                   />
@@ -405,7 +446,9 @@ export function InvoiceGenerator() {
           </button>
         </div>
         {status ? (
-          <p className={`mt-3 text-sm ${status.includes("hazırlandı") ? "text-accent-strong" : "text-danger"}`}>
+          <p
+            className={`mt-3 text-sm ${status.includes("hazırlandı") ? "text-accent-strong" : "text-danger"}`}
+          >
             {status}
           </p>
         ) : null}
@@ -419,7 +462,9 @@ export function InvoiceGenerator() {
         <div className="rounded-lg border border-line bg-white p-6">
           <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-accent-strong">AzToolbox</p>
+              <p className="text-sm font-semibold text-accent-strong">
+                AzToolbox
+              </p>
               <h2 className="mt-2 text-2xl font-semibold">Qəbz / Invoice</h2>
             </div>
             <div className="text-sm text-muted sm:text-right">
@@ -430,12 +475,20 @@ export function InvoiceGenerator() {
 
           <div className="grid gap-5 border-b border-line py-5 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-semibold uppercase text-muted">Satıcı</p>
-              <p className="mt-2 min-h-6 font-medium">{seller || "Satıcı adı"}</p>
+              <p className="text-xs font-semibold uppercase text-muted">
+                Satıcı
+              </p>
+              <p className="mt-2 min-h-6 font-medium">
+                {seller || "Satıcı adı"}
+              </p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase text-muted">Müştəri</p>
-              <p className="mt-2 min-h-6 font-medium">{customer || "Müştəri adı"}</p>
+              <p className="text-xs font-semibold uppercase text-muted">
+                Müştəri
+              </p>
+              <p className="mt-2 min-h-6 font-medium">
+                {customer || "Müştəri adı"}
+              </p>
             </div>
           </div>
 
@@ -456,10 +509,14 @@ export function InvoiceGenerator() {
 
                   return (
                     <tr key={item.id} className="border-b border-line">
-                      <td className="py-3">{item.name || "Xidmət / məhsul adı"}</td>
+                      <td className="py-3">
+                        {item.name || "Xidmət / məhsul adı"}
+                      </td>
                       <td className="py-3">{item.quantity || "0"}</td>
                       <td className="py-3">{formatMoney(price, currency)}</td>
-                      <td className="py-3 text-right">{formatMoney(quantity * price, currency)}</td>
+                      <td className="py-3 text-right">
+                        {formatMoney(quantity * price, currency)}
+                      </td>
                     </tr>
                   );
                 })}

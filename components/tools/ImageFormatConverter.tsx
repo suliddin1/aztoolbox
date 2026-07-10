@@ -39,7 +39,9 @@ export function ImageFormatConverter() {
 
   const extension = format.split("/")[1];
   const downloadName = useMemo(() => {
-    const base = file ? sanitizeFileName(file.name.replace(/\.[^.]+$/, "")) : "converted-image";
+    const base = file
+      ? sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))
+      : "converted-image";
     return `${base || "converted-image"}.${extension}`;
   }, [extension, file]);
 
@@ -123,7 +125,11 @@ export function ImageFormatConverter() {
         format === "image/png" ? undefined : quality,
       );
     } catch (convertError) {
-      setError(convertError instanceof Error ? convertError.message : "Şəkil çevrilə bilmədi.");
+      setError(
+        convertError instanceof Error
+          ? convertError.message
+          : "Şəkil çevrilə bilmədi.",
+      );
       setIsProcessing(false);
     }
   }
@@ -146,15 +152,27 @@ export function ImageFormatConverter() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <ImagePlus className="mb-3 text-accent-strong" size={28} />
-          <span className="font-semibold">{file ? "Yeni şəkil seç" : "Şəkil seç"}</span>
-          <span className="mt-1 text-sm text-muted">PNG, JPEG və WEBP formatına çevir</span>
-          <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={handleFile} />
+          <span className="font-semibold">
+            {file ? "Yeni şəkil seç" : "Şəkil seç"}
+          </span>
+          <span className="mt-1 text-sm text-muted">
+            PNG, JPEG və WEBP formatına çevir
+          </span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleFile}
+          />
         </label>
 
         {file ? (
           <div className="mt-4 rounded-md border border-line bg-surface-soft p-4 text-sm">
             <p className="font-semibold">{file.name}</p>
-            <p className="mt-1 text-muted">Original ölçü: {formatBytes(file.size)}</p>
+            <p className="mt-1 text-muted">
+              Original ölçü: {formatBytes(file.size)}
+            </p>
           </div>
         ) : null}
 
@@ -195,24 +213,40 @@ export function ImageFormatConverter() {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" onClick={convert} disabled={isProcessing || !file} className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55">
+          <button
+            type="button"
+            onClick={convert}
+            disabled={isProcessing || !file}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
+          >
             {isProcessing ? "Çevrilir..." : "Format çevir"}
           </button>
           {resultUrl ? (
-            <a href={resultUrl} download={downloadName} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong">
+            <a
+              href={resultUrl}
+              download={downloadName}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
               <Download size={16} />
               Yüklə
             </a>
           ) : null}
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent">
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
             <RotateCcw size={16} />
             Təmizlə
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
         <p className="mt-4 text-sm leading-6 text-muted">
-          Fayl serverə göndərilmir. Format çevirmə brauzerinizdə canvas ilə aparılır.
+          Fayl serverə göndərilmir. Format çevirmə brauzerinizdə canvas ilə
+          aparılır.
         </p>
       </div>
 
@@ -221,12 +255,22 @@ export function ImageFormatConverter() {
         <div className="mt-3 flex min-h-80 items-center justify-center rounded-md border border-line bg-surface-soft p-3">
           {resultUrl || sourceUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={resultUrl || sourceUrl} alt="Şəkil preview" className="max-h-96 max-w-full rounded-md object-contain" />
+            <img
+              src={resultUrl || sourceUrl}
+              alt="Şəkil preview"
+              className="max-h-96 max-w-full rounded-md object-contain"
+            />
           ) : (
-            <p className="text-center text-muted">Şəkil seçdikdən sonra preview burada görünəcək.</p>
+            <p className="text-center text-muted">
+              Şəkil seçdikdən sonra preview burada görünəcək.
+            </p>
           )}
         </div>
-        {resultSize ? <p className="mt-3 text-sm text-muted">Hazır fayl: {formatBytes(resultSize)}</p> : null}
+        {resultSize ? (
+          <p className="mt-3 text-sm text-muted">
+            Hazır fayl: {formatBytes(resultSize)}
+          </p>
+        ) : null}
       </div>
     </section>
   );

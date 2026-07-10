@@ -54,7 +54,10 @@ export function WordCounter() {
         <h2 className="font-semibold">Canlı statistika</h2>
         <div className="mt-4 grid gap-3">
           {statLabels.map(([key, label]) => (
-            <div key={key} className="rounded-md border border-line bg-surface-soft p-4">
+            <div
+              key={key}
+              className="rounded-md border border-line bg-surface-soft p-4"
+            >
               <p className="text-sm text-muted">{label}</p>
               <p className="mt-2 text-2xl font-semibold">
                 {key === "readingMinutes"

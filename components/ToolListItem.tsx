@@ -13,9 +13,7 @@ export function ToolListItem({ tool }: { tool: Tool }) {
       </span>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{tool.title}</p>
-        <p className="mt-1 text-xs leading-5 text-muted">
-          {tool.description}
-        </p>
+        <p className="mt-1 text-xs leading-5 text-muted">{tool.description}</p>
       </div>
       <FavoriteButton slug={tool.slug} />
       <Link

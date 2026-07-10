@@ -18,6 +18,8 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 
 - Azərbaycan klaviatura düzəldici
 - Azərbaycan hərf düzəldici
+- Azərbaycan Kiril–Latın çeviricisi
+- Ədədi Azərbaycan dilində yazı ilə
 
 ### Şəkil alətləri
 
@@ -26,6 +28,9 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 - Şəkil sıxışdırıcı
 - CV şəkli hazırlayıcı
 - Şəkil format çevirici
+- Şəkil metadata və GPS təmizləyicisi
+- Rəng palitrası çıxarıcı
+- Favicon və app icon generator
 
 ### PDF alətləri
 
@@ -34,6 +39,11 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 - PDF səhifə ayırma
 - PDF səhifələrini təşkil etmə
 - Şəkli PDF et
+- PDF-dən JPG/PNG şəkilə
+- PDF su nişanı
+- PDF səhifə nömrələri
+- PDF-ə vizual imza
+- PDF metadata göstəricisi və təmizləyicisi
 
 ### CV və karyera
 
@@ -48,6 +58,7 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 - Qəbz / invoice generator
 - ƏDV kalkulyatoru
 - Endirim / faiz kalkulyatoru
+- Azərbaycan IBAN yoxlayıcısı
 
 ### Tələbə alətləri
 
@@ -57,10 +68,19 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 ### Mətn alətləri
 
 - Mətn təmizləyici
+- Mətn müqayisəsi
 
 ### Developer alətləri
 
 - QR kod generator
+- QR kod oxuyucu və kamera skaneri
+- SVG optimizer
+- JSON formatter və validator
+- Base64 və Base64URL encoder/decoder
+- JWT decoder
+- UUID v4 və secure random ID generator
+- Unix timestamp çevirici
+- URL encoder, decoder və query parser
 
 ## Texnologiyalar
 
@@ -71,6 +91,11 @@ AzToolbox Azərbaycanca gündəlik rəqəmsal işlər üçün hazırlanmış pul
 - pdf-lib
 - jsPDF
 - qrcode
+- pdfjs-dist
+- JSZip
+- jsQR
+- exifr
+- diff
 - Browser canvas APIs
 
 ## Lokal quraşdırma
@@ -105,9 +130,17 @@ Lint:
 npm run lint
 ```
 
+Formatter, typecheck və unit testlər:
+
+```bash
+npm run format:check
+npm run typecheck
+npm test
+```
+
 ## Məxfilik
 
-AzToolbox hazırkı versiyada backend, database, authentication, analytics, reklam və ödəniş sistemi istifadə etmir. Fayl emalı mümkün olduğu qədər istifadəçinin brauzerində aparılır.
+AzToolbox hazırkı versiyada backend, database, authentication, analytics, reklam və ödəniş sistemi istifadə etmir. Alət girişləri və fayllar brauzerdə emal olunur və serverə göndərilmir.
 
 Favoritlər və son istifadə edilən alətlər yalnız brauzerin localStorage sahəsində saxlanılır. Bu məlumatlar login hesabı ilə sinxronlaşdırılmır.
 

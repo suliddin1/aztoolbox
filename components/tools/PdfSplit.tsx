@@ -14,7 +14,10 @@ function formatFileSize(bytes: number) {
 
 function parsePageRange(value: string, total: number) {
   const pages = new Set<number>();
-  const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
+  const parts = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 
   if (!parts.length) {
     throw new Error("Səhifə aralığını daxil edin.");
@@ -38,7 +41,9 @@ function parsePageRange(value: string, total: number) {
     const start = Number(match[1]);
     const end = Number(match[2]);
     if (start > end) {
-      throw new Error("Aralıqda başlanğıc səhifə son səhifədən böyük ola bilməz.");
+      throw new Error(
+        "Aralıqda başlanğıc səhifə son səhifədən böyük ola bilməz.",
+      );
     }
     if (start < 1 || end > total) {
       throw new Error(`Səhifələr 1 ilə ${total} arasında olmalıdır.`);
@@ -95,7 +100,10 @@ export function PdfSplit() {
       return;
     }
 
-    if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      selected.type !== "application/pdf" &&
+      !selected.name.toLowerCase().endsWith(".pdf")
+    ) {
       setError("Yalnız PDF faylı seçin.");
       return;
     }
@@ -155,7 +163,11 @@ export function PdfSplit() {
       replaceResultUrl(URL.createObjectURL(blob));
       setSuccess(`${indices.length} səhifə çıxarıldı.`);
     } catch (extractError) {
-      setError(extractError instanceof Error ? extractError.message : "Səhifələr çıxarıla bilmədi.");
+      setError(
+        extractError instanceof Error
+          ? extractError.message
+          : "Səhifələr çıxarıla bilmədi.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -167,7 +179,9 @@ export function PdfSplit() {
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <FileText className="mb-3 text-accent-strong" size={28} />
           <span className="font-semibold">PDF faylı seç</span>
-          <span className="mt-1 text-sm text-muted">Bir PDF faylından səhifə çıxarın</span>
+          <span className="mt-1 text-sm text-muted">
+            Bir PDF faylından səhifə çıxarın
+          </span>
           <input
             ref={inputRef}
             type="file"
@@ -187,7 +201,9 @@ export function PdfSplit() {
         ) : null}
 
         <div className="mt-4">
-          <label className="mb-2 block text-sm font-semibold">Səhifə aralığı</label>
+          <label className="mb-2 block text-sm font-semibold">
+            Səhifə aralığı
+          </label>
           <input
             value={range}
             onChange={(event) => {
@@ -231,16 +247,18 @@ export function PdfSplit() {
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <h2 className="font-semibold">Necə işləyir?</h2>
         <div className="mt-3 rounded-md border border-line bg-surface-soft p-4 text-sm leading-6 text-muted">
           <p>
-            Tək səhifə üçün <span className="font-mono text-foreground">1</span>,
-            aralıq üçün <span className="font-mono text-foreground">1-3</span>,
-            qarışıq seçim üçün{" "}
+            Tək səhifə üçün <span className="font-mono text-foreground">1</span>
+            , aralıq üçün <span className="font-mono text-foreground">1-3</span>
+            , qarışıq seçim üçün{" "}
             <span className="font-mono text-foreground">1-3,7,10-12</span>{" "}
             yazın.
           </p>

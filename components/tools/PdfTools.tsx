@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Download, FileText, RotateCcw, RotateCw, Trash2, Undo2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  FileText,
+  RotateCcw,
+  RotateCw,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { degrees, PDFDocument } from "pdf-lib";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { ImageToPdf } from "@/components/tools/ImageToPdf";
@@ -76,7 +85,10 @@ function PdfOrganizer() {
       return;
     }
 
-    if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      selected.type !== "application/pdf" &&
+      !selected.name.toLowerCase().endsWith(".pdf")
+    ) {
       setError("Yalnız PDF faylı seçin.");
       return;
     }
@@ -121,7 +133,9 @@ function PdfOrganizer() {
   function rotatePage(id: string) {
     updatePages(
       pages.map((page) =>
-        page.id === id ? { ...page, rotation: (page.rotation + 90) % 360 } : page,
+        page.id === id
+          ? { ...page, rotation: (page.rotation + 90) % 360 }
+          : page,
       ),
     );
   }
@@ -167,7 +181,9 @@ function PdfOrganizer() {
       const output = await PDFDocument.create();
 
       for (const item of selectedPages) {
-        const [copiedPage] = await output.copyPages(source, [item.originalIndex]);
+        const [copiedPage] = await output.copyPages(source, [
+          item.originalIndex,
+        ]);
         const currentAngle = copiedPage.getRotation().angle;
         copiedPage.setRotation(degrees((currentAngle + item.rotation) % 360));
         output.addPage(copiedPage);
@@ -189,7 +205,9 @@ function PdfOrganizer() {
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <FileText className="mb-3 text-accent-strong" size={28} />
           <span className="font-semibold">PDF faylı seç</span>
-          <span className="mt-1 text-sm text-muted">Səhifələri sırala, sil və döndər</span>
+          <span className="mt-1 text-sm text-muted">
+            Səhifələri sırala, sil və döndər
+          </span>
           <input
             ref={inputRef}
             type="file"
@@ -212,7 +230,9 @@ function PdfOrganizer() {
           <button
             type="button"
             onClick={createOrganizedPdf}
-            disabled={isProcessing || !file || !pages.some((page) => !page.deleted)}
+            disabled={
+              isProcessing || !file || !pages.some((page) => !page.deleted)
+            }
             className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
           >
             {isProcessing ? "Yaradılır..." : "Yeni PDF yarat"}
@@ -237,7 +257,9 @@ function PdfOrganizer() {
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
@@ -256,7 +278,9 @@ function PdfOrganizer() {
                 <div className="min-w-32 flex-1">
                   <p className="font-semibold">{page.label}</p>
                   <p className="text-xs text-muted">
-                    {page.rotation ? `${page.rotation}° döndürülüb` : "Döndürülməyib"}
+                    {page.rotation
+                      ? `${page.rotation}° döndürülüb`
+                      : "Döndürülməyib"}
                     {page.deleted ? " · çıxarılacaq" : ""}
                   </p>
                 </div>
@@ -294,7 +318,9 @@ function PdfOrganizer() {
                   onClick={() => toggleDelete(page.id)}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-line bg-white text-muted transition hover:border-danger hover:text-danger"
                   title={page.deleted ? "Geri qaytar" : "Səhifəni sil"}
-                  aria-label={page.deleted ? "Səhifəni geri qaytar" : "Səhifəni sil"}
+                  aria-label={
+                    page.deleted ? "Səhifəni geri qaytar" : "Səhifəni sil"
+                  }
                 >
                   {page.deleted ? <Undo2 size={15} /> : <Trash2 size={15} />}
                 </button>

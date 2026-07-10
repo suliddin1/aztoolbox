@@ -26,7 +26,10 @@ const optionLabels: Array<{ key: keyof TextCleanOptions; label: string }> = [
   { key: "uppercase", label: "Hamısını böyük hərflə yaz" },
   { key: "sentenceCase", label: "Cümlə formatı" },
   { key: "titleCase", label: "Title Case" },
-  { key: "normalizeQuotes", label: "Dırnaq və apostrof simvollarını sadələşdir" },
+  {
+    key: "normalizeQuotes",
+    label: "Dırnaq və apostrof simvollarını sadələşdir",
+  },
 ];
 
 export function TextCleaner() {
@@ -36,14 +39,21 @@ export function TextCleaner() {
   const inputCount = input.length;
   const outputCount = output.length;
   const hasCaseOption = useMemo(
-    () => options.lowercase || options.uppercase || options.sentenceCase || options.titleCase,
+    () =>
+      options.lowercase ||
+      options.uppercase ||
+      options.sentenceCase ||
+      options.titleCase,
     [options],
   );
 
   function updateOption(key: keyof TextCleanOptions, value: boolean) {
     setOptions((current) => {
       const next = { ...current, [key]: value };
-      if (value && ["lowercase", "uppercase", "sentenceCase", "titleCase"].includes(key)) {
+      if (
+        value &&
+        ["lowercase", "uppercase", "sentenceCase", "titleCase"].includes(key)
+      ) {
         next.lowercase = key === "lowercase";
         next.uppercase = key === "uppercase";
         next.sentenceCase = key === "sentenceCase";
@@ -83,11 +93,16 @@ export function TextCleaner() {
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {optionLabels.map((item) => (
-            <label key={item.key} className="flex items-center gap-3 rounded-md border border-line bg-surface-soft px-3 py-3 text-sm font-medium">
+            <label
+              key={item.key}
+              className="flex items-center gap-3 rounded-md border border-line bg-surface-soft px-3 py-3 text-sm font-medium"
+            >
               <input
                 type="checkbox"
                 checked={options[item.key]}
-                onChange={(event) => updateOption(item.key, event.target.checked)}
+                onChange={(event) =>
+                  updateOption(item.key, event.target.checked)
+                }
                 className="h-4 w-4 accent-[var(--accent)]"
               />
               {item.label}

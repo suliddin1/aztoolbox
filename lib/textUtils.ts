@@ -12,9 +12,7 @@ export type TextCleanOptions = {
 const sentenceStart = /(^|[.!?]\s+)([\p{L}])/gu;
 
 export function normalizeQuoteCharacters(value: string) {
-  return value
-    .replace(/[“”„]/g, '"')
-    .replace(/[‘’‚`´]/g, "'");
+  return value.replace(/[“”„]/g, '"').replace(/[‘’‚`´]/g, "'");
 }
 
 export function removeExtraSpaces(value: string) {
@@ -37,17 +35,23 @@ export function fixLineEndings(value: string) {
 
 export function toSentenceCase(value: string) {
   const lower = value.toLocaleLowerCase("az-AZ");
-  return lower.replace(sentenceStart, (match, prefix: string, letter: string) => {
-    return `${prefix}${letter.toLocaleUpperCase("az-AZ")}`;
-  });
+  return lower.replace(
+    sentenceStart,
+    (match, prefix: string, letter: string) => {
+      return `${prefix}${letter.toLocaleUpperCase("az-AZ")}`;
+    },
+  );
 }
 
 export function toTitleCase(value: string) {
   return value
     .toLocaleLowerCase("az-AZ")
-    .replace(/(^|[\s\-–—/])([\p{L}])/gu, (match, prefix: string, letter: string) => {
-      return `${prefix}${letter.toLocaleUpperCase("az-AZ")}`;
-    });
+    .replace(
+      /(^|[\s\-–—/])([\p{L}])/gu,
+      (match, prefix: string, letter: string) => {
+        return `${prefix}${letter.toLocaleUpperCase("az-AZ")}`;
+      },
+    );
 }
 
 export function cleanText(value: string, options: TextCleanOptions) {
@@ -84,7 +88,10 @@ export function cleanText(value: string, options: TextCleanOptions) {
 export function getTextStats(value: string) {
   const trimmed = value.trim();
   const words = trimmed.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)?/gu) ?? [];
-  const sentences = trimmed.match(/[^.!?\n]+[.!?]+|[^.!?\n]+$/gu)?.filter((item) => item.trim()) ?? [];
+  const sentences =
+    trimmed
+      .match(/[^.!?\n]+[.!?]+|[^.!?\n]+$/gu)
+      ?.filter((item) => item.trim()) ?? [];
   const paragraphs = trimmed
     ? trimmed.split(/\n{2,}/).filter((paragraph) => paragraph.trim()).length
     : 0;
@@ -95,6 +102,7 @@ export function getTextStats(value: string) {
     words: words.length,
     sentences: sentences.length,
     paragraphs,
-    readingMinutes: words.length === 0 ? 0 : Math.max(1, Math.ceil(words.length / 200)),
+    readingMinutes:
+      words.length === 0 ? 0 : Math.max(1, Math.ceil(words.length / 200)),
   };
 }

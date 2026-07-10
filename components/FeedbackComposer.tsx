@@ -54,7 +54,9 @@ export function FeedbackComposer() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <div className="grid gap-4">
           <div>
-            <label className="mb-2 block text-sm font-semibold">Feedback növü</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Feedback növü
+            </label>
             <select
               value={type}
               onChange={(event) => {
@@ -105,7 +107,9 @@ export function FeedbackComposer() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-semibold">Əlaqə (istəyə bağlı)</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Əlaqə (istəyə bağlı)
+            </label>
             <input
               value={contact}
               onChange={(event) => {
