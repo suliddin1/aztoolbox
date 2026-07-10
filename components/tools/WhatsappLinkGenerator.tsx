@@ -55,7 +55,8 @@ export function WhatsappLinkGenerator() {
   const [status, setStatus] = useState("");
   const normalized = useMemo(() => normalizeAzerbaijaniPhone(phone), [phone]);
   const isValid = isValidAzerbaijaniWhatsappNumber(phone);
-  const generatedLink = hasGenerated && isValid ? buildWhatsappLink(phone, message) : "";
+  const generatedLink =
+    hasGenerated && isValid ? buildWhatsappLink(phone, message) : "";
 
   function generate() {
     setTouched(true);
@@ -68,7 +69,9 @@ export function WhatsappLinkGenerator() {
     }
 
     if (!isValid) {
-      setStatus("Nömrəni 0501234567, 501234567 və ya +994501234567 formatında daxil edin.");
+      setStatus(
+        "Nömrəni 0501234567, 501234567 və ya +994501234567 formatında daxil edin.",
+      );
       return;
     }
 
@@ -109,7 +112,10 @@ export function WhatsappLinkGenerator() {
             ) : null}
           </div>
           <div>
-            <label htmlFor="message" className="mb-2 block text-sm font-semibold">
+            <label
+              htmlFor="message"
+              className="mb-2 block text-sm font-semibold"
+            >
               Mesaj
             </label>
             <textarea
@@ -151,7 +157,9 @@ export function WhatsappLinkGenerator() {
             Link yarat
           </button>
           {status ? (
-            <p className={`text-sm ${generatedLink ? "text-accent-strong" : "text-danger"}`}>
+            <p
+              className={`text-sm ${generatedLink ? "text-accent-strong" : "text-danger"}`}
+            >
               {status}
             </p>
           ) : null}

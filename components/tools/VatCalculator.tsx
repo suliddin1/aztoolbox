@@ -52,17 +52,23 @@ export function VatCalculator() {
             <input
               inputMode="decimal"
               value={amount}
-              onChange={(event) => setAmount(event.target.value.replace(",", "."))}
+              onChange={(event) =>
+                setAmount(event.target.value.replace(",", "."))
+              }
               placeholder="100"
               className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">ƏDV faizi</label>
+            <label className="mb-2 block text-sm font-semibold">
+              ƏDV faizi
+            </label>
             <input
               inputMode="decimal"
               value={rate}
-              onChange={(event) => setRate(event.target.value.replace(",", "."))}
+              onChange={(event) =>
+                setRate(event.target.value.replace(",", "."))
+              }
               placeholder="18"
               className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
             />
@@ -87,12 +93,18 @@ export function VatCalculator() {
 
         <div className="mt-5 flex flex-wrap gap-2">
           <CopyButton value={copyText} label="Nəticəni kopyala" />
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent">
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
             <RotateCcw size={16} />
             Təmizlə
           </button>
         </div>
-        <p className="mt-4 text-sm text-muted">Bu kalkulyator məlumat xarakterlidir.</p>
+        <p className="mt-4 text-sm text-muted">
+          Bu kalkulyator məlumat xarakterlidir.
+        </p>
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">

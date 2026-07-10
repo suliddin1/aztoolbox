@@ -22,14 +22,15 @@ export function DiscountCalculator() {
     const b = parseNumber(second);
 
     if (mode === "discount") {
-      const saved = Math.max(0, a) * Math.max(0, b) / 100;
+      const saved = (Math.max(0, a) * Math.max(0, b)) / 100;
       return {
         title: "Endirim nəticəsi",
         lines: [
           `Son qiymət: ${formatMoney(Math.max(0, a) - saved)}`,
           `Qənaət: ${formatMoney(saved)}`,
         ],
-        error: a < 0 || b < 0 ? "Qiymət və endirim faizi mənfi ola bilməz." : "",
+        error:
+          a < 0 || b < 0 ? "Qiymət və endirim faizi mənfi ola bilməz." : "",
       };
     }
 
@@ -88,43 +89,68 @@ export function DiscountCalculator() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-semibold">
-              {mode === "discount" ? "Original price" : mode === "percentage" ? "Part value" : "Old value"}
+              {mode === "discount"
+                ? "Original price"
+                : mode === "percentage"
+                  ? "Part value"
+                  : "Old value"}
             </label>
             <input
               inputMode="decimal"
               value={first}
-              onChange={(event) => setFirst(event.target.value.replace(",", "."))}
+              onChange={(event) =>
+                setFirst(event.target.value.replace(",", "."))
+              }
               className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
             />
           </div>
           <div>
             <label className="mb-2 block text-sm font-semibold">
-              {mode === "discount" ? "Discount %" : mode === "percentage" ? "Total value" : "New value"}
+              {mode === "discount"
+                ? "Discount %"
+                : mode === "percentage"
+                  ? "Total value"
+                  : "New value"}
             </label>
             <input
               inputMode="decimal"
               value={second}
-              onChange={(event) => setSecond(event.target.value.replace(",", "."))}
+              onChange={(event) =>
+                setSecond(event.target.value.replace(",", "."))
+              }
               className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
             />
           </div>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <CopyButton value={copyText} label="Nəticəni kopyala" disabled={Boolean(result.error)} />
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent">
+          <CopyButton
+            value={copyText}
+            label="Nəticəni kopyala"
+            disabled={Boolean(result.error)}
+          />
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
             <RotateCcw size={16} />
             Təmizlə
           </button>
         </div>
-        {result.error ? <p className="mt-3 text-sm text-danger">{result.error}</p> : null}
+        {result.error ? (
+          <p className="mt-3 text-sm text-danger">{result.error}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <h2 className="font-semibold">{result.title}</h2>
         <div className="mt-4 grid gap-3">
           {result.lines.map((line) => (
-            <div key={line} className="rounded-md border border-line bg-surface-soft p-4">
+            <div
+              key={line}
+              className="rounded-md border border-line bg-surface-soft p-4"
+            >
               <p className="text-2xl font-semibold">{line}</p>
             </div>
           ))}

@@ -34,7 +34,8 @@ function toolsByOrder(slugs: ToolSlug[]) {
 
 export function ToolsIndex() {
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>("Hamısı");
+  const [activeCategory, setActiveCategory] =
+    useState<CategoryFilter>("Hamısı");
   const [recentSlugs] = useToolSlugs(recentToolsStorageKey);
 
   const featuredTools = useMemo(() => toolsByOrder(featuredOrder), []);
@@ -71,20 +72,22 @@ export function ToolsIndex() {
           />
         </div>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {(["Hamısı", ...toolCategories] as CategoryFilter[]).map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
-                activeCategory === category
-                  ? "border-accent bg-accent text-white shadow-sm"
-                  : "border-line bg-white text-muted hover:border-accent/45 hover:text-accent"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+          {(["Hamısı", ...toolCategories] as CategoryFilter[]).map(
+            (category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory(category)}
+                className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
+                  activeCategory === category
+                    ? "border-accent bg-accent text-white shadow-sm"
+                    : "border-line bg-white text-muted hover:border-accent/45 hover:text-accent"
+                }`}
+              >
+                {category}
+              </button>
+            ),
+          )}
         </div>
       </section>
 
@@ -107,7 +110,9 @@ export function ToolsIndex() {
               <Clock3 size={18} />
             </span>
             <div>
-              <p className="text-sm font-semibold text-accent-strong">Lokal tarixçə</p>
+              <p className="text-sm font-semibold text-accent-strong">
+                Lokal tarixçə
+              </p>
               <h2 className="text-2xl font-bold">Son istifadə edilənlər</h2>
             </div>
           </div>
@@ -131,7 +136,10 @@ export function ToolsIndex() {
         {groupedTools.length ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {groupedTools.map(({ category, tools: categoryTools }) => (
-              <div key={category} className="rounded-3xl border border-line bg-white/86 p-5 shadow-sm shadow-slate-200/50">
+              <div
+                key={category}
+                className="rounded-3xl border border-line bg-white/86 p-5 shadow-sm shadow-slate-200/50"
+              >
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h3 className="text-lg font-semibold">{category}</h3>
                   <span className="rounded-md border border-line bg-surface-soft px-2.5 py-1 text-xs font-medium text-muted">

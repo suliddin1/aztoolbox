@@ -4,7 +4,8 @@ import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
   title: "Məxfilik | AzToolbox",
-  description: "AzToolbox məxfilik prinsipləri və client-side fayl emalı haqqında məlumat.",
+  description:
+    "AzToolbox məxfilik prinsipləri və client-side fayl emalı haqqında məlumat.",
   path: "/privacy",
   keywords: ["AzToolbox məxfilik", "client-side fayl emalı", "localStorage"],
 });
@@ -49,7 +50,9 @@ export default function PrivacyPage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
       <div className="max-w-3xl">
         <p className="text-sm font-semibold text-accent-strong">Məxfilik</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-normal">Məxfilik</h1>
+        <h1 className="mt-2 text-4xl font-semibold tracking-normal">
+          Məxfilik
+        </h1>
         <p className="mt-4 text-lg leading-8 text-muted">
           AzToolbox mümkün olduğu qədər faylları brauzerinizdə emal edir və
           serverə göndərmir.
@@ -58,7 +61,10 @@ export default function PrivacyPage() {
 
       <div className="mt-10 grid gap-5">
         {sections.map((section) => (
-          <section key={section.title} className="rounded-lg border border-line bg-surface p-6 shadow-sm">
+          <section
+            key={section.title}
+            className="rounded-lg border border-line bg-surface p-6 shadow-sm"
+          >
             <h2 className="text-2xl font-semibold">{section.title}</h2>
             <div className="mt-3 grid gap-3">
               {section.body.map((paragraph) => (
@@ -74,7 +80,8 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-semibold">Əlaqə və feedback</h2>
           <p className="mt-3 max-w-4xl leading-7 text-muted">
             Problem bildirmək, yeni alət təklif etmək və ya məxfilik mesajı ilə
-            bağlı qeyd göndərmək üçün feedback composer-dən istifadə edə bilərsiniz.
+            bağlı qeyd göndərmək üçün feedback composer-dən istifadə edə
+            bilərsiniz.
           </p>
           <Link
             href="/feedback"

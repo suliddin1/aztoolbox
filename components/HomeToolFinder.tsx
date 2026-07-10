@@ -23,7 +23,8 @@ export function HomeToolFinder() {
     }
 
     return tools.filter((tool) => {
-      const searchable = `${tool.title} ${tool.description} ${tool.category} ${tool.slug}`.toLowerCase();
+      const searchable =
+        `${tool.title} ${tool.description} ${tool.category} ${tool.slug}`.toLowerCase();
       return searchable.includes(normalizedQuery);
     });
   }, [normalizedQuery]);

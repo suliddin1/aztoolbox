@@ -40,7 +40,9 @@ export function ImageCompressor() {
 
   const extension = format.split("/")[1];
   const downloadName = useMemo(() => {
-    const base = file ? sanitizeFileName(file.name.replace(/\.[^.]+$/, "")) : "compressed-image";
+    const base = file
+      ? sanitizeFileName(file.name.replace(/\.[^.]+$/, ""))
+      : "compressed-image";
     return `${base || "aztoolbox-compressed"}-compressed.${extension}`;
   }, [extension, file]);
 
@@ -100,7 +102,10 @@ export function ImageCompressor() {
     }
 
     const maxWidthNumber = maxWidth.trim() ? Number(maxWidth) : 0;
-    if (maxWidth.trim() && (!Number.isFinite(maxWidthNumber) || maxWidthNumber < 50)) {
+    if (
+      maxWidth.trim() &&
+      (!Number.isFinite(maxWidthNumber) || maxWidthNumber < 50)
+    ) {
       setError("Max width boş saxlanmalı və ya ən azı 50 olmalıdır.");
       return;
     }
@@ -108,7 +113,10 @@ export function ImageCompressor() {
     setIsProcessing(true);
     try {
       const image = await loadImage(sourceUrl);
-      const ratio = maxWidthNumber && image.width > maxWidthNumber ? maxWidthNumber / image.width : 1;
+      const ratio =
+        maxWidthNumber && image.width > maxWidthNumber
+          ? maxWidthNumber / image.width
+          : 1;
       const width = Math.round(image.width * ratio);
       const height = Math.round(image.height * ratio);
       const canvas = document.createElement("canvas");
@@ -140,7 +148,11 @@ export function ImageCompressor() {
         format === "image/png" ? undefined : quality,
       );
     } catch (compressError) {
-      setError(compressError instanceof Error ? compressError.message : "Şəkil sıxışdırıla bilmədi.");
+      setError(
+        compressError instanceof Error
+          ? compressError.message
+          : "Şəkil sıxışdırıla bilmədi.",
+      );
       setIsProcessing(false);
     }
   }
@@ -164,44 +176,114 @@ export function ImageCompressor() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <ImagePlus className="mb-3 text-accent-strong" size={28} />
-          <span className="font-semibold">{file ? "Yeni şəkil seç" : "Şəkil seç"}</span>
-          <span className="mt-1 text-sm text-muted">Email, form və sayt üçün ölçünü azaldın</span>
-          <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={handleFile} />
+          <span className="font-semibold">
+            {file ? "Yeni şəkil seç" : "Şəkil seç"}
+          </span>
+          <span className="mt-1 text-sm text-muted">
+            Email, form və sayt üçün ölçünü azaldın
+          </span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleFile}
+          />
         </label>
 
         {file ? (
           <div className="mt-4 rounded-md border border-line bg-surface-soft p-4 text-sm">
             <p className="font-semibold">{file.name}</p>
-            <p className="mt-1 text-muted">Original ölçü: {formatBytes(file.size)}</p>
+            <p className="mt-1 text-muted">
+              Original ölçü: {formatBytes(file.size)}
+            </p>
           </div>
         ) : null}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-semibold">Format</label>
-            <select value={format} onChange={(event) => { setFormat(event.target.value as OutputFormat); clearResult(); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
+            <select
+              value={format}
+              onChange={(event) => {
+                setFormat(event.target.value as OutputFormat);
+                clearResult();
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
               <option value="image/jpeg">JPEG</option>
               <option value="image/webp">WEBP</option>
               <option value="image/png">PNG</option>
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Max width</label>
-            <input value={maxWidth} onChange={(event) => { setMaxWidth(event.target.value.replace(/\D/g, "")); clearResult(); }} placeholder="Məsələn: 1200" className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent" />
+            <label className="mb-2 block text-sm font-semibold">
+              Max width
+            </label>
+            <input
+              value={maxWidth}
+              onChange={(event) => {
+                setMaxWidth(event.target.value.replace(/\D/g, ""));
+                clearResult();
+              }}
+              placeholder="Məsələn: 1200"
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            />
           </div>
         </div>
 
-        <label className="mt-4 block text-sm font-semibold">Keyfiyyət {Math.round(quality * 100)}%</label>
-        <input type="range" min={0.3} max={1} step={0.05} value={quality} disabled={format === "image/png"} onChange={(event) => { setQuality(Number(event.target.value)); clearResult(); }} className="h-11 w-full accent-[var(--accent)] disabled:opacity-45" />
+        <label className="mt-4 block text-sm font-semibold">
+          Keyfiyyət {Math.round(quality * 100)}%
+        </label>
+        <input
+          type="range"
+          min={0.3}
+          max={1}
+          step={0.05}
+          value={quality}
+          disabled={format === "image/png"}
+          onChange={(event) => {
+            setQuality(Number(event.target.value));
+            clearResult();
+          }}
+          className="h-11 w-full accent-[var(--accent)] disabled:opacity-45"
+        />
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" onClick={compress} disabled={isProcessing || !file} className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55">{isProcessing ? "Sıxışdırılır..." : "Sıxışdır"}</button>
-          {resultUrl ? <a href={resultUrl} download={downloadName} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"><Download size={16} />Yüklə</a> : null}
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"><RotateCcw size={16} />Təmizlə</button>
+          <button
+            type="button"
+            onClick={compress}
+            disabled={isProcessing || !file}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            {isProcessing ? "Sıxışdırılır..." : "Sıxışdır"}
+          </button>
+          {resultUrl ? (
+            <a
+              href={resultUrl}
+              download={downloadName}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              <Download size={16} />
+              Yüklə
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
+            <RotateCcw size={16} />
+            Təmizlə
+          </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
-        <p className="mt-4 text-sm leading-6 text-muted">Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.</p>
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
+        <p className="mt-4 text-sm leading-6 text-muted">
+          Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.
+        </p>
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
@@ -209,9 +291,15 @@ export function ImageCompressor() {
         <div className="mt-3 flex min-h-80 items-center justify-center rounded-md border border-line bg-surface-soft p-3">
           {resultUrl || sourceUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={resultUrl || sourceUrl} alt="Şəkil preview" className="max-h-96 max-w-full rounded-md object-contain" />
+            <img
+              src={resultUrl || sourceUrl}
+              alt="Şəkil preview"
+              className="max-h-96 max-w-full rounded-md object-contain"
+            />
           ) : (
-            <p className="text-center text-muted">Şəkil seçdikdən sonra preview burada görünəcək.</p>
+            <p className="text-center text-muted">
+              Şəkil seçdikdən sonra preview burada görünəcək.
+            </p>
           )}
         </div>
         {file && compressedSize ? (
@@ -222,7 +310,9 @@ export function ImageCompressor() {
             </div>
             <div className="rounded-md border border-line bg-surface-soft p-3">
               <p className="text-xs text-muted">Sıxışdırılmış</p>
-              <p className="mt-1 font-semibold">{formatBytes(compressedSize)}</p>
+              <p className="mt-1 font-semibold">
+                {formatBytes(compressedSize)}
+              </p>
             </div>
             <div className="rounded-md border border-line bg-surface-soft p-3">
               <p className="text-xs text-muted">Qənaət</p>

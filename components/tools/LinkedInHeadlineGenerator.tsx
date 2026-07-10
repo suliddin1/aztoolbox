@@ -4,7 +4,13 @@ import { CopyButton } from "@/components/CopyButton";
 import { RotateCcw, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-type Role = "CS Student" | "Frontend Developer" | "Full Stack Developer" | "Software Engineer" | "Freelancer" | "Custom";
+type Role =
+  | "CS Student"
+  | "Frontend Developer"
+  | "Full Stack Developer"
+  | "Software Engineer"
+  | "Freelancer"
+  | "Custom";
 type Positioning = "clean" | "student" | "portfolio" | "entrepreneurial";
 
 const roleOptions: Role[] = [
@@ -44,7 +50,12 @@ function titleCase(value: string) {
   return value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function makeHeadlines(role: string, skills: string, focus: string, positioning: Positioning) {
+function makeHeadlines(
+  role: string,
+  skills: string,
+  focus: string,
+  positioning: Positioning,
+) {
   const skillText = joinSkills(skills) || "Practical Web Tools";
   const focusText = focus.trim() || "Building useful products";
   const focusTitle = titleCase(focusText);
@@ -76,9 +87,11 @@ export function LinkedInHeadlineGenerator() {
   const [focus, setFocus] = useState("Building web apps");
   const [positioning, setPositioning] = useState<Positioning>("clean");
   const [hasGenerated, setHasGenerated] = useState(false);
-  const roleText = role === "Custom" ? customRole.trim() || "Professional" : role;
+  const roleText =
+    role === "Custom" ? customRole.trim() || "Professional" : role;
   const headlines = useMemo(
-    () => (hasGenerated ? makeHeadlines(roleText, skills, focus, positioning) : []),
+    () =>
+      hasGenerated ? makeHeadlines(roleText, skills, focus, positioning) : [],
     [focus, hasGenerated, positioning, roleText, skills],
   );
 
@@ -96,28 +109,80 @@ export function LinkedInHeadlineGenerator() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <div className="grid gap-4">
           <div>
-            <label className="mb-2 block text-sm font-semibold">Status / role</label>
-            <select value={role} onChange={(event) => { setRole(event.target.value as Role); setHasGenerated(false); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
-              {roleOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            <label className="mb-2 block text-sm font-semibold">
+              Status / role
+            </label>
+            <select
+              value={role}
+              onChange={(event) => {
+                setRole(event.target.value as Role);
+                setHasGenerated(false);
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
+              {roleOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
             </select>
           </div>
           {role === "Custom" ? (
             <div>
-              <label className="mb-2 block text-sm font-semibold">Custom role</label>
-              <input value={customRole} onChange={(event) => { setCustomRole(event.target.value); setHasGenerated(false); }} placeholder="Məsələn: Product Designer" className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent" />
+              <label className="mb-2 block text-sm font-semibold">
+                Custom role
+              </label>
+              <input
+                value={customRole}
+                onChange={(event) => {
+                  setCustomRole(event.target.value);
+                  setHasGenerated(false);
+                }}
+                placeholder="Məsələn: Product Designer"
+                className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+              />
             </div>
           ) : null}
           <div>
-            <label className="mb-2 block text-sm font-semibold">Əsas bacarıqlar</label>
-            <input value={skills} onChange={(event) => { setSkills(event.target.value); setHasGenerated(false); }} placeholder="React, Next.js, TypeScript" className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent" />
+            <label className="mb-2 block text-sm font-semibold">
+              Əsas bacarıqlar
+            </label>
+            <input
+              value={skills}
+              onChange={(event) => {
+                setSkills(event.target.value);
+                setHasGenerated(false);
+              }}
+              placeholder="React, Next.js, TypeScript"
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Focus area</label>
-            <input value={focus} onChange={(event) => { setFocus(event.target.value); setHasGenerated(false); }} placeholder="Building web apps" className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent" />
+            <label className="mb-2 block text-sm font-semibold">
+              Focus area
+            </label>
+            <input
+              value={focus}
+              onChange={(event) => {
+                setFocus(event.target.value);
+                setHasGenerated(false);
+              }}
+              placeholder="Building web apps"
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Positioning</label>
-            <select value={positioning} onChange={(event) => { setPositioning(event.target.value as Positioning); setHasGenerated(false); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
+            <label className="mb-2 block text-sm font-semibold">
+              Positioning
+            </label>
+            <select
+              value={positioning}
+              onChange={(event) => {
+                setPositioning(event.target.value as Positioning);
+                setHasGenerated(false);
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
               <option value="clean">Clean and professional</option>
               <option value="student">Student-friendly</option>
               <option value="portfolio">Developer portfolio style</option>
@@ -127,9 +192,27 @@ export function LinkedInHeadlineGenerator() {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" onClick={() => setHasGenerated(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"><Sparkles size={16} />Headline yarat</button>
-          <CopyButton value={headlines.join("\n")} label="Hamısını kopyala" disabled={!headlines.length} />
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"><RotateCcw size={16} />Təmizlə</button>
+          <button
+            type="button"
+            onClick={() => setHasGenerated(true)}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+          >
+            <Sparkles size={16} />
+            Headline yarat
+          </button>
+          <CopyButton
+            value={headlines.join("\n")}
+            label="Hamısını kopyala"
+            disabled={!headlines.length}
+          />
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
+            <RotateCcw size={16} />
+            Təmizlə
+          </button>
         </div>
 
         <div className="mt-5 rounded-md border border-line bg-surface-soft p-4 text-sm text-muted">
@@ -159,12 +242,18 @@ export function LinkedInHeadlineGenerator() {
         <div className="mt-3 grid gap-3">
           {headlines.length ? (
             headlines.map((headline) => (
-              <div key={headline} className="rounded-md border border-line bg-surface-soft p-4">
+              <div
+                key={headline}
+                className="rounded-md border border-line bg-surface-soft p-4"
+              >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="font-medium">{headline}</p>
-                    <p className={`mt-2 text-xs ${headline.length > 120 ? "text-danger" : "text-muted"}`}>
-                      {headline.length} simvol {headline.length > 120 ? "· çox uzun ola bilər" : ""}
+                    <p
+                      className={`mt-2 text-xs ${headline.length > 120 ? "text-danger" : "text-muted"}`}
+                    >
+                      {headline.length} simvol{" "}
+                      {headline.length > 120 ? "· çox uzun ola bilər" : ""}
                     </p>
                   </div>
                   <CopyButton value={headline} />

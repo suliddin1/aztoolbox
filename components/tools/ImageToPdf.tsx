@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Download, ImagePlus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  ImagePlus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { PDFDocument } from "pdf-lib";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
@@ -45,7 +52,9 @@ async function imageToPngBytes(image: HTMLImageElement) {
   }
 
   context.drawImage(image, 0, 0);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
   if (!blob) {
     throw new Error("Şəkil PDF üçün hazırlana bilmədi.");
   }
@@ -137,11 +146,14 @@ export function ImageToPdf() {
     }
 
     const nextImages = valid.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        url: URL.createObjectURL(file),
-      }));
-    imageUrlsRef.current = [...imageUrlsRef.current, ...nextImages.map((image) => image.url)];
+      id: crypto.randomUUID(),
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    imageUrlsRef.current = [
+      ...imageUrlsRef.current,
+      ...nextImages.map((image) => image.url),
+    ];
     setImages((current) => [...current, ...nextImages]);
   }
 
@@ -150,7 +162,9 @@ export function ImageToPdf() {
       const removed = current.find((image) => image.id === id);
       if (removed) {
         URL.revokeObjectURL(removed.url);
-        imageUrlsRef.current = imageUrlsRef.current.filter((url) => url !== removed.url);
+        imageUrlsRef.current = imageUrlsRef.current.filter(
+          (url) => url !== removed.url,
+        );
       }
       return current.filter((image) => image.id !== id);
     });
@@ -212,8 +226,14 @@ export function ImageToPdf() {
         const page = pdf.addPage([size.width, size.height]);
         const ratio =
           fitMode === "cover"
-            ? Math.max(size.width / embedded.width, size.height / embedded.height)
-            : Math.min(size.width / embedded.width, size.height / embedded.height);
+            ? Math.max(
+                size.width / embedded.width,
+                size.height / embedded.height,
+              )
+            : Math.min(
+                size.width / embedded.width,
+                size.height / embedded.height,
+              );
         const drawWidth = embedded.width * ratio;
         const drawHeight = embedded.height * ratio;
 
@@ -234,7 +254,11 @@ export function ImageToPdf() {
       replaceResultUrl(URL.createObjectURL(blob));
       setSuccess("PDF hazırdır. İndi yükləyə bilərsiniz.");
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "PDF yaradıla bilmədi.");
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "PDF yaradıla bilmədi.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -246,7 +270,9 @@ export function ImageToPdf() {
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <ImagePlus className="mb-3 text-accent-strong" size={28} />
           <span className="font-semibold">Şəkil seç</span>
-          <span className="mt-1 text-sm text-muted">JPG, JPEG, PNG və WEBP</span>
+          <span className="mt-1 text-sm text-muted">
+            JPG, JPEG, PNG və WEBP
+          </span>
           <input
             ref={inputRef}
             type="file"
@@ -259,7 +285,9 @@ export function ImageToPdf() {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
-            <label className="mb-2 block text-sm font-semibold">PDF ölçüsü</label>
+            <label className="mb-2 block text-sm font-semibold">
+              PDF ölçüsü
+            </label>
             <select
               value={pageSize}
               onChange={(event) => {
@@ -274,7 +302,9 @@ export function ImageToPdf() {
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Orientasiya</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Orientasiya
+            </label>
             <select
               value={orientation}
               onChange={(event) => {
@@ -289,7 +319,9 @@ export function ImageToPdf() {
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Şəkil yerləşməsi</label>
+            <label className="mb-2 block text-sm font-semibold">
+              Şəkil yerləşməsi
+            </label>
             <select
               value={fitMode}
               onChange={(event) => {
@@ -333,7 +365,9 @@ export function ImageToPdf() {
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
@@ -341,12 +375,23 @@ export function ImageToPdf() {
         <div className="mt-3 grid gap-3">
           {images.length ? (
             images.map((item, index) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-md border border-line bg-surface-soft p-3">
+              <div
+                key={item.id}
+                className="flex items-center gap-3 rounded-md border border-line bg-surface-soft p-3"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.url} alt={item.file.name} className="h-14 w-14 rounded object-cover" />
+                <img
+                  src={item.url}
+                  alt={item.file.name}
+                  className="h-14 w-14 rounded object-cover"
+                />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{item.file.name}</p>
-                  <p className="text-xs text-muted">{formatFileSize(item.file.size)}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {item.file.name}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {formatFileSize(item.file.size)}
+                  </p>
                 </div>
                 <button
                   type="button"

@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BriefcaseBusiness, Code2, GraduationCap, Store, UserRound } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Code2,
+  GraduationCap,
+  Store,
+  UserRound,
+} from "lucide-react";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
   title: "AzToolbox nədir? | AzToolbox",
-  description: "AzToolbox haqqında: Azərbaycan üçün pulsuz, praktik və sürətli mini alət platforması.",
+  description:
+    "AzToolbox haqqında: Azərbaycan üçün pulsuz, praktik və sürətli mini alət platforması.",
   path: "/about",
   keywords: ["AzToolbox haqqında", "Azərbaycan mini alətlər", "pulsuz alətlər"],
 });
@@ -18,12 +25,14 @@ const audiences = [
   },
   {
     title: "Freelancerlər",
-    description: "Qəbz, portfolio, LinkedIn və müştəri üçün fayl işlərini sadələşdirmək üçün.",
+    description:
+      "Qəbz, portfolio, LinkedIn və müştəri üçün fayl işlərini sadələşdirmək üçün.",
     icon: UserRound,
   },
   {
     title: "Developerlər",
-    description: "QR, mətn, link və karyera alətlərini bir yerdə istifadə etmək üçün.",
+    description:
+      "QR, mətn, link və karyera alətlərini bir yerdə istifadə etmək üçün.",
     icon: Code2,
   },
   {
@@ -33,7 +42,8 @@ const audiences = [
   },
   {
     title: "Gündəlik istifadəçilər",
-    description: "PDF, şəkil, mətn və QR kimi kiçik işləri sürətli həll etmək üçün.",
+    description:
+      "PDF, şəkil, mətn və QR kimi kiçik işləri sürətli həll etmək üçün.",
     icon: BriefcaseBusiness,
   },
 ];
@@ -60,8 +70,8 @@ export default function AboutPage() {
             Bir çox istifadəçiyə CV hazırlamaq, PDF birləşdirmək, şəkil
             ölçüləndirmək, WhatsApp linki yaratmaq, QR kod hazırlamaq, mətn
             təmizləmək, qəbz düzəltmək və tələbə/biznes hesablamaları aparmaq
-            üçün tez açılan sadə alətlər lazımdır. AzToolbox bu işləri bir
-            yerdə toplamağa çalışır.
+            üçün tez açılan sadə alətlər lazımdır. AzToolbox bu işləri bir yerdə
+            toplamağa çalışır.
           </p>
         </section>
 
@@ -74,7 +84,10 @@ export default function AboutPage() {
               "Mümkün olduqca client-side processing",
               "Sadə və sürətli alətlər",
             ].map((item) => (
-              <div key={item} className="rounded-md border border-line bg-surface-soft p-4 text-sm font-medium">
+              <div
+                key={item}
+                className="rounded-md border border-line bg-surface-soft p-4 text-sm font-medium"
+              >
                 {item}
               </div>
             ))}
@@ -88,12 +101,17 @@ export default function AboutPage() {
               const Icon = audience.icon;
 
               return (
-                <div key={audience.title} className="rounded-lg border border-line bg-surface p-5 shadow-sm">
+                <div
+                  key={audience.title}
+                  className="rounded-lg border border-line bg-surface p-5 shadow-sm"
+                >
                   <div className="flex h-10 w-10 items-center justify-center rounded-md border border-line bg-surface-soft text-accent-strong">
                     <Icon size={19} />
                   </div>
                   <h3 className="mt-4 font-semibold">{audience.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">{audience.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {audience.description}
+                  </p>
                 </div>
               );
             })}
@@ -107,10 +125,16 @@ export default function AboutPage() {
             sürətli və rahat etməkdir.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link href="/tools" className="inline-flex h-10 items-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong">
+            <Link
+              href="/tools"
+              className="inline-flex h-10 items-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
               Alətlərə bax
             </Link>
-            <Link href="/privacy" className="inline-flex h-10 items-center rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent">
+            <Link
+              href="/privacy"
+              className="inline-flex h-10 items-center rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+            >
               Məxfilik
             </Link>
           </div>

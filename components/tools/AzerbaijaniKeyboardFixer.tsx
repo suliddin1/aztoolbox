@@ -84,8 +84,7 @@ export function AzerbaijaniKeyboardFixer() {
             <p className="whitespace-pre-wrap">{output}</p>
           ) : (
             <p className="text-muted">
-              Mətn daxil edib “Düzəlt” düyməsinə basın. Nəticə burada
-              görünəcək.
+              Mətn daxil edib “Düzəlt” düyməsinə basın. Nəticə burada görünəcək.
             </p>
           )}
         </div>

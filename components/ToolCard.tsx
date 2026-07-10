@@ -3,7 +3,13 @@ import { ArrowRight } from "lucide-react";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import type { Tool } from "@/lib/tools";
 
-export function ToolCard({ tool, compact = false }: { tool: Tool; compact?: boolean }) {
+export function ToolCard({
+  tool,
+  compact = false,
+}: {
+  tool: Tool;
+  compact?: boolean;
+}) {
   const Icon = tool.icon;
 
   return (

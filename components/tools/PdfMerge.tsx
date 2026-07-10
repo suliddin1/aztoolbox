@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Download, FileText, RotateCcw, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  FileText,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { PDFDocument } from "pdf-lib";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
@@ -55,7 +62,11 @@ export function PdfMerge() {
     setSuccess("");
     clearResult();
 
-    const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"));
+    const invalid = selected.find(
+      (file) =>
+        file.type !== "application/pdf" &&
+        !file.name.toLowerCase().endsWith(".pdf"),
+    );
     if (invalid) {
       setError("Yalnız PDF faylları seçin.");
       return;
@@ -128,7 +139,9 @@ export function PdfMerge() {
       replaceResultUrl(URL.createObjectURL(blob));
       setSuccess("PDF-lər birləşdirildi.");
     } catch {
-      setError("PDF-ləri birləşdirmək mümkün olmadı. Fayllar şifrəli və ya zədələnmiş ola bilər.");
+      setError(
+        "PDF-ləri birləşdirmək mümkün olmadı. Fayllar şifrəli və ya zədələnmiş ola bilər.",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -140,7 +153,9 @@ export function PdfMerge() {
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <FileText className="mb-3 text-accent-strong" size={28} />
           <span className="font-semibold">PDF faylları seç</span>
-          <span className="mt-1 text-sm text-muted">Ən azı 2 PDF faylı lazımdır</span>
+          <span className="mt-1 text-sm text-muted">
+            Ən azı 2 PDF faylı lazımdır
+          </span>
           <input
             ref={inputRef}
             type="file"
@@ -180,7 +195,9 @@ export function PdfMerge() {
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
@@ -188,11 +205,18 @@ export function PdfMerge() {
         <div className="mt-3 grid gap-3">
           {files.length ? (
             files.map((item, index) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-md border border-line bg-surface-soft p-3">
+              <div
+                key={item.id}
+                className="flex items-center gap-3 rounded-md border border-line bg-surface-soft p-3"
+              >
                 <FileText className="text-accent-strong" size={24} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{item.file.name}</p>
-                  <p className="text-xs text-muted">{formatFileSize(item.file.size)}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {item.file.name}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {formatFileSize(item.file.size)}
+                  </p>
                 </div>
                 <button
                   type="button"

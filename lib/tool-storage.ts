@@ -25,7 +25,10 @@ export function readToolSlugs(key: string): ToolSlug[] {
       return [];
     }
 
-    return parsed.filter((value): value is ToolSlug => typeof value === "string" && isToolSlug(value));
+    return parsed.filter(
+      (value): value is ToolSlug =>
+        typeof value === "string" && isToolSlug(value),
+    );
   } catch {
     return [];
   }
@@ -41,6 +44,9 @@ export function writeToolSlugs(key: string, slugs: ToolSlug[]) {
 }
 
 export function addRecentTool(slug: ToolSlug) {
-  const next = [slug, ...readToolSlugs(recentToolsStorageKey).filter((item) => item !== slug)].slice(0, 6);
+  const next = [
+    slug,
+    ...readToolSlugs(recentToolsStorageKey).filter((item) => item !== slug),
+  ].slice(0, 6);
   writeToolSlugs(recentToolsStorageKey, next);
 }

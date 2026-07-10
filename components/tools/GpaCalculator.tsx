@@ -65,7 +65,11 @@ export function GpaCalculator() {
 
   function updateCourse(id: string, patch: Partial<Course>) {
     setError("");
-    setCourses((current) => current.map((course) => (course.id === id ? { ...course, ...patch } : course)));
+    setCourses((current) =>
+      current.map((course) =>
+        course.id === id ? { ...course, ...patch } : course,
+      ),
+    );
   }
 
   function addCourse() {
@@ -74,11 +78,17 @@ export function GpaCalculator() {
   }
 
   function removeCourse(id: string) {
-    setCourses((current) => (current.length === 1 ? current : current.filter((course) => course.id !== id)));
+    setCourses((current) =>
+      current.length === 1
+        ? current
+        : current.filter((course) => course.id !== id),
+    );
   }
 
   function validate() {
-    const invalidCredit = courses.some((course) => parseNumber(course.credit) < 0);
+    const invalidCredit = courses.some(
+      (course) => parseNumber(course.credit) < 0,
+    );
     const invalidScore = courses.some((course) => {
       if (!course.score.trim()) return false;
       const score = parseNumber(course.score);
@@ -114,7 +124,11 @@ export function GpaCalculator() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <h2 className="font-semibold">Fənlər</h2>
-          <button type="button" onClick={addCourse} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-line bg-surface px-3 text-sm font-semibold transition hover:border-accent">
+          <button
+            type="button"
+            onClick={addCourse}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-line bg-surface px-3 text-sm font-semibold transition hover:border-accent"
+          >
             <Plus size={15} />
             Fənn əlavə et
           </button>
@@ -122,10 +136,15 @@ export function GpaCalculator() {
 
         <div className="grid gap-3">
           {courses.map((course, index) => (
-            <div key={course.id} className="grid gap-3 rounded-md border border-line bg-surface-soft p-3 lg:grid-cols-[1fr_110px_110px_40px]">
+            <div
+              key={course.id}
+              className="grid gap-3 rounded-md border border-line bg-surface-soft p-3 lg:grid-cols-[1fr_110px_110px_40px]"
+            >
               <input
                 value={course.name}
-                onChange={(event) => updateCourse(course.id, { name: event.target.value })}
+                onChange={(event) =>
+                  updateCourse(course.id, { name: event.target.value })
+                }
                 placeholder={`Fənn adı ${index + 1}`}
                 aria-label={`Fənn adı ${index + 1}`}
                 className="h-10 rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
@@ -134,7 +153,11 @@ export function GpaCalculator() {
                 inputMode="decimal"
                 value={course.credit}
                 onBlur={validate}
-                onChange={(event) => updateCourse(course.id, { credit: event.target.value.replace(",", ".") })}
+                onChange={(event) =>
+                  updateCourse(course.id, {
+                    credit: event.target.value.replace(",", "."),
+                  })
+                }
                 placeholder="Kredit"
                 aria-label={`Fənn ${index + 1} krediti`}
                 className="h-10 rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
@@ -143,7 +166,11 @@ export function GpaCalculator() {
                 inputMode="decimal"
                 value={course.score}
                 onBlur={validate}
-                onChange={(event) => updateCourse(course.id, { score: event.target.value.replace(",", ".") })}
+                onChange={(event) =>
+                  updateCourse(course.id, {
+                    score: event.target.value.replace(",", "."),
+                  })
+                }
                 placeholder="Bal"
                 aria-label={`Fənn ${index + 1} balı`}
                 className="h-10 rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
@@ -163,10 +190,18 @@ export function GpaCalculator() {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" onClick={fillSample} className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong">
+          <button
+            type="button"
+            onClick={fillSample}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+          >
             Nümunə doldur
           </button>
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent">
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
             <RotateCcw size={16} />
             Təmizlə
           </button>
@@ -179,19 +214,26 @@ export function GpaCalculator() {
         <div className="mt-4 grid gap-3">
           <div className="rounded-md border border-line bg-surface-soft p-4">
             <p className="text-sm text-muted">Ümumi kredit</p>
-            <p className="mt-1 text-2xl font-semibold">{result.totalCredits.toFixed(1)}</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {result.totalCredits.toFixed(1)}
+            </p>
           </div>
           <div className="rounded-md border border-line bg-surface-soft p-4">
             <p className="text-sm text-muted">Çəkili orta bal</p>
-            <p className="mt-1 text-2xl font-semibold">{result.average.toFixed(2)}</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {result.average.toFixed(2)}
+            </p>
           </div>
           <div className="rounded-md border border-line bg-surface-soft p-4">
             <p className="text-sm text-muted">Təxmini 4.0 GPA</p>
-            <p className="mt-1 text-2xl font-semibold">{result.gpa.toFixed(2)}</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {result.gpa.toFixed(2)}
+            </p>
           </div>
         </div>
         <p className="mt-4 text-sm leading-6 text-muted">
-          4.0 GPA çevirməsi təxminidir və universitet qaydalarına görə fərqlənə bilər.
+          4.0 GPA çevirməsi təxminidir və universitet qaydalarına görə fərqlənə
+          bilər.
         </p>
       </div>
     </section>

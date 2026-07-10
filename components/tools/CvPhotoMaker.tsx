@@ -57,7 +57,9 @@ export function CvPhotoMaker() {
   const preset = presets[presetIndex];
   const extension = format.split("/")[1];
   const downloadName = useMemo(() => {
-    const base = fileName ? sanitizeFileName(fileName.replace(/\.[^.]+$/, "")) : "cv-photo";
+    const base = fileName
+      ? sanitizeFileName(fileName.replace(/\.[^.]+$/, ""))
+      : "cv-photo";
     return `${base || "aztoolbox-cv-photo"}-cv-photo.${extension}`;
   }, [extension, fileName]);
 
@@ -79,7 +81,11 @@ export function CvPhotoMaker() {
     clearResult();
     resultUrlRef.current = url;
     setResultUrl(url);
-    setResultSize(size < 1024 * 1024 ? `${Math.round(size / 1024)} KB` : `${(size / 1024 / 1024).toFixed(2)} MB`);
+    setResultSize(
+      size < 1024 * 1024
+        ? `${Math.round(size / 1024)} KB`
+        : `${(size / 1024 / 1024).toFixed(2)} MB`,
+    );
   }
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -133,7 +139,13 @@ export function CvPhotoMaker() {
       const drawWidth = image.width * ratio;
       const drawHeight = image.height * ratio;
       context.imageSmoothingQuality = "high";
-      context.drawImage(image, (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2, drawWidth, drawHeight);
+      context.drawImage(
+        image,
+        (canvas.width - drawWidth) / 2,
+        (canvas.height - drawHeight) / 2,
+        drawWidth,
+        drawHeight,
+      );
 
       canvas.toBlob(
         (blob) => {
@@ -150,7 +162,11 @@ export function CvPhotoMaker() {
         format === "image/png" ? undefined : quality,
       );
     } catch (generateError) {
-      setError(generateError instanceof Error ? generateError.message : "Şəkil hazırlana bilmədi.");
+      setError(
+        generateError instanceof Error
+          ? generateError.message
+          : "Şəkil hazırlana bilmədi.",
+      );
       setIsProcessing(false);
     }
   }
@@ -176,21 +192,49 @@ export function CvPhotoMaker() {
       <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center transition hover:border-accent">
           <ImagePlus className="mb-3 text-accent-strong" size={28} />
-          <span className="font-semibold">{fileName ? "Yeni şəkil seç" : "Şəkil seç"}</span>
-          <span className="mt-1 text-sm text-muted">AI background removal yoxdur; crop, resize və export edilir</span>
-          <input ref={inputRef} type="file" accept="image/*" className="sr-only" onChange={handleFile} />
+          <span className="font-semibold">
+            {fileName ? "Yeni şəkil seç" : "Şəkil seç"}
+          </span>
+          <span className="mt-1 text-sm text-muted">
+            AI background removal yoxdur; crop, resize və export edilir
+          </span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleFile}
+          />
         </label>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-semibold">Preset</label>
-            <select value={presetIndex} onChange={(event) => { setPresetIndex(Number(event.target.value)); clearResult(); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
-              {presets.map((item, index) => <option key={item.label} value={index}>{item.label}</option>)}
+            <select
+              value={presetIndex}
+              onChange={(event) => {
+                setPresetIndex(Number(event.target.value));
+                clearResult();
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
+              {presets.map((item, index) => (
+                <option key={item.label} value={index}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <label className="mb-2 block text-sm font-semibold">Fon</label>
-            <select value={background} onChange={(event) => { setBackground(event.target.value as BgMode); clearResult(); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
+            <select
+              value={background}
+              onChange={(event) => {
+                setBackground(event.target.value as BgMode);
+                clearResult();
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
               <option value="original">Original</option>
               <option value="white">White</option>
               <option value="gray">Light gray</option>
@@ -198,15 +242,31 @@ export function CvPhotoMaker() {
             </select>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-semibold">Crop davranışı</label>
-            <select value={fitMode} onChange={(event) => { setFitMode(event.target.value as FitMode); clearResult(); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
+            <label className="mb-2 block text-sm font-semibold">
+              Crop davranışı
+            </label>
+            <select
+              value={fitMode}
+              onChange={(event) => {
+                setFitMode(event.target.value as FitMode);
+                clearResult();
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
               <option value="contain">Contain</option>
               <option value="cover">Cover / crop</option>
             </select>
           </div>
           <div>
             <label className="mb-2 block text-sm font-semibold">Format</label>
-            <select value={format} onChange={(event) => { setFormat(event.target.value as OutputFormat); clearResult(); }} className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent">
+            <select
+              value={format}
+              onChange={(event) => {
+                setFormat(event.target.value as OutputFormat);
+                clearResult();
+              }}
+              className="h-11 w-full rounded-md border border-line bg-white px-3 outline-none transition focus:border-accent"
+            >
               <option value="image/png">PNG</option>
               <option value="image/jpeg">JPEG</option>
               <option value="image/webp">WEBP</option>
@@ -214,17 +274,58 @@ export function CvPhotoMaker() {
           </div>
         </div>
 
-        <label className="mt-4 block text-sm font-semibold">Keyfiyyət {Math.round(quality * 100)}%</label>
-        <input type="range" min={0.4} max={1} step={0.05} value={quality} disabled={format === "image/png"} onChange={(event) => { setQuality(Number(event.target.value)); clearResult(); }} className="h-11 w-full accent-[var(--accent)] disabled:opacity-45" />
+        <label className="mt-4 block text-sm font-semibold">
+          Keyfiyyət {Math.round(quality * 100)}%
+        </label>
+        <input
+          type="range"
+          min={0.4}
+          max={1}
+          step={0.05}
+          value={quality}
+          disabled={format === "image/png"}
+          onChange={(event) => {
+            setQuality(Number(event.target.value));
+            clearResult();
+          }}
+          className="h-11 w-full accent-[var(--accent)] disabled:opacity-45"
+        />
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" onClick={generate} disabled={isProcessing || !sourceUrl} className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55">{isProcessing ? "Hazırlanır..." : "Şəkli hazırla"}</button>
-          {resultUrl ? <a href={resultUrl} download={downloadName} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"><Download size={16} />Yüklə</a> : null}
-          <button type="button" onClick={clear} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"><RotateCcw size={16} />Təmizlə</button>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={isProcessing || !sourceUrl}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            {isProcessing ? "Hazırlanır..." : "Şəkli hazırla"}
+          </button>
+          {resultUrl ? (
+            <a
+              href={resultUrl}
+              download={downloadName}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              <Download size={16} />
+              Yüklə
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-semibold transition hover:border-accent"
+          >
+            <RotateCcw size={16} />
+            Təmizlə
+          </button>
         </div>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
-        <p className="mt-4 text-sm leading-6 text-muted">Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.</p>
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
+        <p className="mt-4 text-sm leading-6 text-muted">
+          Fayllarınız serverə göndərilmir. Əməliyyat brauzerinizdə aparılır.
+        </p>
       </div>
 
       <div className="grid gap-5">
@@ -233,12 +334,20 @@ export function CvPhotoMaker() {
           <div className="mt-3 flex min-h-80 items-center justify-center rounded-md border border-line bg-surface-soft p-3">
             {resultUrl || sourceUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={resultUrl || sourceUrl} alt="CV şəkli preview" className="max-h-96 max-w-full rounded-md object-contain" />
+              <img
+                src={resultUrl || sourceUrl}
+                alt="CV şəkli preview"
+                className="max-h-96 max-w-full rounded-md object-contain"
+              />
             ) : (
-              <p className="text-center text-muted">Şəkil seçdikdən sonra preview burada görünəcək.</p>
+              <p className="text-center text-muted">
+                Şəkil seçdikdən sonra preview burada görünəcək.
+              </p>
             )}
           </div>
-          {resultSize ? <p className="mt-3 text-sm text-muted">Hazır fayl: {resultSize}</p> : null}
+          {resultSize ? (
+            <p className="mt-3 text-sm text-muted">Hazır fayl: {resultSize}</p>
+          ) : null}
         </div>
       </div>
     </section>

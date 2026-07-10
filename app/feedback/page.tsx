@@ -4,7 +4,8 @@ import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
   title: "Feedback və alət təklifi | AzToolbox",
-  description: "AzToolbox üçün problem, təklif və yeni alət ideyası mətni hazırlayın.",
+  description:
+    "AzToolbox üçün problem, təklif və yeni alət ideyası mətni hazırlayın.",
   path: "/feedback",
   keywords: ["AzToolbox feedback", "alət təklifi", "problem bildirmək"],
 });
@@ -19,8 +20,8 @@ export default function FeedbackPage() {
         </h1>
         <p className="mt-4 text-lg leading-8 text-muted">
           Problem bildirmək, yeni alət təklif etmək və ya istifadə rahatlığı ilə
-          bağlı qeyd hazırlamaq üçün bu composer-dən istifadə edin. Mesaj serverə
-          göndərilmir.
+          bağlı qeyd hazırlamaq üçün bu composer-dən istifadə edin. Mesaj
+          serverə göndərilmir.
         </p>
       </div>
       <FeedbackComposer />

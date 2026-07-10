@@ -17,7 +17,11 @@ function escapeWifi(value: string) {
   return value.replace(/([\\;,":])/g, "\\$1");
 }
 
-function buildWifiPayload(ssid: string, password: string, security: WifiSecurity) {
+function buildWifiPayload(
+  ssid: string,
+  password: string,
+  security: WifiSecurity,
+) {
   if (security === "nopass") {
     return `WIFI:T:nopass;S:${escapeWifi(ssid)};;`;
   }
@@ -190,7 +194,9 @@ export function QRCodeGenerator() {
         {type === "whatsapp" ? (
           <div className="grid gap-4">
             <div>
-              <label className="mb-2 block text-sm font-semibold">Telefon</label>
+              <label className="mb-2 block text-sm font-semibold">
+                Telefon
+              </label>
               <input
                 value={phone}
                 onChange={(event) => {
@@ -233,7 +239,9 @@ export function QRCodeGenerator() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold">Təhlükəsizlik</label>
+                <label className="mb-2 block text-sm font-semibold">
+                  Təhlükəsizlik
+                </label>
                 <select
                   value={security}
                   onChange={(event) => {
@@ -248,7 +256,9 @@ export function QRCodeGenerator() {
                 </select>
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold">Şifrə</label>
+                <label className="mb-2 block text-sm font-semibold">
+                  Şifrə
+                </label>
                 <input
                   value={password}
                   disabled={security === "nopass"}
@@ -290,7 +300,9 @@ export function QRCodeGenerator() {
           {isGenerating ? "Yaradılır..." : "QR kod yarat"}
         </button>
         {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
-        {success ? <p className="mt-3 text-sm text-accent-strong">{success}</p> : null}
+        {success ? (
+          <p className="mt-3 text-sm text-accent-strong">{success}</p>
+        ) : null}
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5 text-center shadow-sm">
@@ -298,7 +310,11 @@ export function QRCodeGenerator() {
         <div className="mt-4 flex min-h-80 items-center justify-center rounded-lg border border-line bg-surface-soft p-5">
           {qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrUrl} alt="QR kod" className="h-64 w-64 rounded-md bg-white p-2 shadow-sm" />
+            <img
+              src={qrUrl}
+              alt="QR kod"
+              className="h-64 w-64 rounded-md bg-white p-2 shadow-sm"
+            />
           ) : (
             <p className="max-w-sm text-muted">
               Məlumatları daxil edib QR kod yaradın. Nəticə burada görünəcək.
@@ -306,7 +322,11 @@ export function QRCodeGenerator() {
           )}
         </div>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <CopyButton value={encodedContent} label="Məzmunu kopyala" disabled={!qrUrl} />
+          <CopyButton
+            value={encodedContent}
+            label="Məzmunu kopyala"
+            disabled={!qrUrl}
+          />
           {qrUrl ? (
             <a
               href={qrUrl}

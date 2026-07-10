@@ -1,9 +1,6 @@
 export function BackgroundAtmosphere() {
   return (
-    <div
-      aria-hidden="true"
-      className="ambient-background"
-    >
+    <div aria-hidden="true" className="ambient-background">
       <div className="ambient-blob ambient-blob-1" />
       <div className="ambient-blob ambient-blob-2" />
       <div className="ambient-blob ambient-blob-3" />

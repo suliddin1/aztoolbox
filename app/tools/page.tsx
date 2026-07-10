@@ -7,14 +7,23 @@ export const metadata: Metadata = createMetadata({
   description:
     "PDF, şəkil, CV, QR, WhatsApp, mətn, biznes və tələbə alətlərini bir yerdə istifadə edin.",
   path: "/tools",
-  keywords: ["bütün alətlər", "PDF alətləri", "şəkil alətləri", "CV", "QR", "biznes alətləri"],
+  keywords: [
+    "bütün alətlər",
+    "PDF alətləri",
+    "şəkil alətləri",
+    "CV",
+    "QR",
+    "biznes alətləri",
+  ],
 });
 
 export default function ToolsPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
       <div className="mx-auto mb-10 max-w-3xl text-center">
-        <p className="text-sm font-semibold text-accent-strong">AzToolbox kataloqu</p>
+        <p className="text-sm font-semibold text-accent-strong">
+          AzToolbox kataloqu
+        </p>
         <h1 className="mt-3 text-4xl font-bold tracking-normal sm:text-5xl">
           Bütün alətlər
         </h1>
