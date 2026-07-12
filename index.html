@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#f7f9fd" />
+  <title>AzToolBox — gündəlik işlər üçün 39 brauzer aləti</title>
+  <meta name="description" content="PDF, şəkil, mətn, developer və hesablama işləri üçün 39 sürətli, qeydiyyatsız və brauzerdə işləyən alət." />
+  <link rel="icon" href="./favicon.svg" />
+  <script src="./assets/js/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/tokens.css" />
+  <link rel="stylesheet" href="./assets/css/app.css" />
+</head>
+<body data-page="home" data-base=".">
+  <ambient-waves></ambient-waves>
+  <div class="page-wash" aria-hidden="true"></div>
+  <az-header></az-header>
+  <main id="main-content" class="dashboard">
+    <div class="container">
+      <section class="dashboard-hero reveal" aria-labelledby="dashboard-title">
+        <div class="dashboard-kicker"><span data-total-tools>39</span> alət · qeydiyyatsız</div>
+        <h1 class="dashboard-title" id="dashboard-title">İşini seç, aləti tap, bitir.</h1>
+        <p class="dashboard-subtitle">PDF, şəkil, mətn və kod işlərini menyularda itmədən həll edin. Alətlər birbaşa brauzerinizdə işləyir.</p>
+        <button class="dashboard-search" type="button" data-open-global-search aria-label="Alət axtarışını aç">
+          <span aria-hidden="true">⌕</span>
+          <span>Nə etmək istəyirsiniz?</span>
+          <span class="search-action">Alət tap <span aria-hidden="true">→</span></span>
+        </button>
+        <div class="hero-shortcuts" aria-label="Tez axtarış nümunələri">
+          <span>Tez seçim:</span>
+          <a href="./tool/?slug=pdf-merger">PDF birləşdir</a>
+          <a href="./tool/?slug=image-resizer">Şəkil ölçüsünü dəyiş</a>
+          <a href="./tool/?slug=json-formatter">JSON formatla</a>
+        </div>
+      </section>
+
+      <section class="dashboard-section reveal" aria-labelledby="categories-title">
+        <div class="section-heading"><div><h2 id="categories-title">İş sahəsini seçin</h2><p>Hər kateqoriyada real alətlər və aydın nəticə.</p></div><a href="./tools/">Hamısına bax →</a></div>
+        <div class="dashboard-category-grid" data-category-grid data-motion-grid></div>
+      </section>
+
+      <section class="dashboard-section reveal" aria-labelledby="quick-title">
+        <div class="section-heading"><div><h2 id="quick-title">Tez istifadə olunanlar</h2><p>Ən çox lazım olan alətlər bir klik uzaqlıqda.</p></div><a href="./tools/">39 aləti aç →</a></div>
+        <div class="quick-tools-grid" data-featured-tools data-motion-grid></div>
+      </section>
+
+      <section class="privacy-strip reveal" aria-label="AzToolBox üstünlükləri">
+        <div class="privacy-item"><b aria-hidden="true">✓</b><div><strong>Qeydiyyat yoxdur</strong><span>Aləti açın və dərhal başlayın.</span></div></div>
+        <div class="privacy-item"><b aria-hidden="true">⌁</b><div><strong>Lokal emal</strong><span>Dəstəklənən fayllar cihazınızda işlənir.</span></div></div>
+        <div class="privacy-item"><b aria-hidden="true">↗</b><div><strong>Mobilə uyğundur</strong><span>Telefon və masaüstündə eyni aydın axın.</span></div></div>
+      </section>
+    </div>
+  </main>
+  <az-footer></az-footer>
+  <script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>

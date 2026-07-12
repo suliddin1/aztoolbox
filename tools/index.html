@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#f7f9fd" />
+  <title>39 alət — AzToolBox</title>
+  <meta name="description" content="AzToolBox-un 39 alətdən ibarət axtarılan və kateqoriyalara bölünmüş kataloqu." />
+  <script src="../assets/js/theme-init.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/tokens.css" />
+  <link rel="stylesheet" href="../assets/css/app.css" />
+</head>
+<body data-page="tools" data-base="..">
+  <ambient-waves></ambient-waves>
+  <div class="page-wash" aria-hidden="true"></div>
+  <az-header></az-header>
+  <main id="main-content" class="catalog-page">
+    <div class="container">
+      <header class="catalog-head">
+        <div><div class="page-kicker">Alətlər kataloqu</div><h1 data-catalog-title>Bütün alətlər</h1><p data-catalog-copy>Tapşırığınızı yazın və ya iş sahəsinə görə süzün.</p></div>
+        <span class="catalog-count" data-tool-count aria-live="polite">39 alət</span>
+      </header>
+      <div class="catalog-toolbar">
+        <label class="catalog-search"><span aria-hidden="true">⌕</span><input type="search" data-catalog-search placeholder="Nə etmək istəyirsiniz?" aria-label="Alətlərdə axtar" /></label>
+        <div class="filter-row" data-filter-row aria-label="Kateqoriya filtrləri"></div>
+      </div>
+      <div class="tool-grid" data-tools-grid data-motion-grid></div>
+      <div class="catalog-empty" data-catalog-empty hidden>
+        <strong data-empty-title>Uyğun alət tapılmadı</strong>
+        <p data-empty-copy>Axtarışı dəyişin və ya bütün alətlərə qayıdın.</p>
+        <button class="button button-secondary" type="button" data-empty-action>Bütün alətləri göstər</button>
+      </div>
+      <section class="recent-section" data-recent-section hidden>
+        <div class="section-heading"><div><h2>Son istifadə</h2><p>İşinizə qaldığınız yerdən davam edin.</p></div></div>
+        <div class="tool-grid" data-recent-grid data-motion-grid></div>
+      </section>
+    </div>
+  </main>
+  <az-footer></az-footer>
+  <script type="module" src="../assets/js/app.js"></script>
+</body>
+</html>

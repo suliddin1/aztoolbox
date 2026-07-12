@@ -1,0 +1,219 @@
+const inputPanel = (body, actions = '') => `<div class="workspace-panel"><h2>Giriş</h2>${body}${actions ? `<div class="workspace-actions">${actions}</div>` : ''}<div class="processing-status" data-processing-status aria-live="polite" hidden></div></div>`;
+const resultPanel = () => `<section class="workspace-panel result-panel" aria-live="polite"><h2>Nəticə</h2><div class="result-empty" data-empty><div><strong>Nəticə burada görünəcək</strong><span>Məlumatı daxil edib əməliyyatı başladın.</span></div></div><div class="result-output" data-output hidden></div></section>`;
+const upload = (accept, multiple, label, hint, attr) => `<label class="upload-zone" data-drop-zone><input type="file" accept="${accept}" ${multiple ? 'multiple' : ''} ${attr} /><div><span class="tool-icon">＋</span><strong>${label}</strong><p>${hint}</p><span class="button button-secondary">Fayl seç</span></div></label><div class="selected-files" data-selected-files></div><p class="privacy-note"><span aria-hidden="true">⌁</span>Fayl bu brauzerdə emal olunur və serverə göndərilmir.</p>`;
+const textArea = (label = 'Mətn', attr = 'data-simple-input', placeholder = 'Mətni buraya yazın...') => `<div class="field"><label>${label}</label><textarea class="textarea" ${attr} placeholder="${placeholder}"></textarea></div>`;
+const actions = (primary, attr, secondary = '') => `<button class="button button-primary" type="button" ${attr}>${primary}</button>${secondary}<button class="button button-ghost" type="button" data-reset>Sıfırla</button>`;
+
+const imageKinds = new Set(['image-compress', 'image-convert', 'image-crop', 'image-rotate', 'image-gray', 'image-clean']);
+const pdfKinds = new Set(['pdf-split', 'pdf-remove', 'pdf-extract', 'pdf-clean']);
+const transformKinds = new Set(['text-case', 'line-sort', 'line-unique', 'space-clean', 'slug']);
+
+export function simpleToolWorkspace(tool) {
+  if (pdfKinds.has(tool.kind)) {
+    const pageField = tool.kind === 'pdf-clean' ? '' : '<div class="field"><label for="page-list">Səhifələr</label><input class="input" id="page-list" data-page-list placeholder="Məsələn: 1, 3-5" /><span class="field-hint">Səhifələri vergül və aralıqla göstərin.</span></div>';
+    const label = tool.kind === 'pdf-remove' ? 'Səhifələri sil' : tool.kind === 'pdf-clean' ? 'Metadata-nı təmizlə' : 'Yeni PDF yarat';
+    return `${inputPanel(`${upload('application/pdf', false, 'PDF faylını seçin', 'Fayl cihazınızda emal olunur', 'data-simple-file')}${pageField}`, actions(label, 'data-simple-run'))}${resultPanel()}`;
+  }
+  if (tool.kind === 'image-pdf') return `${inputPanel(upload('image/png,image/jpeg,image/webp', true, 'Şəkilləri seçin', 'PNG, JPG və WebP · bir neçə fayl seçilə bilər', 'data-simple-files'), actions('PDF yarat', 'data-simple-run'))}${resultPanel()}`;
+  if (imageKinds.has(tool.kind)) {
+    let options = '';
+    if (tool.kind === 'image-compress') options = '<div class="field"><label>Keyfiyyət: <span data-quality-label>80%</span></label><input type="range" min="20" max="95" value="80" data-quality /></div>';
+    if (tool.kind === 'image-convert') options = '<div class="field"><label>Çıxış formatı</label><select class="select" data-format><option value="image/webp">WebP</option><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></div>';
+    if (tool.kind === 'image-crop') options = '<div class="check-row"><div class="field"><label>En</label><input class="input" type="number" min="1" data-crop-width /></div><div class="field"><label>Hündürlük</label><input class="input" type="number" min="1" data-crop-height /></div></div>';
+    if (tool.kind === 'image-rotate') options = '<div class="field"><label>Döndərmə</label><select class="select" data-angle><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>';
+    return `${inputPanel(`${upload('image/png,image/jpeg,image/webp', false, 'Şəkli seçin', 'PNG, JPG və WebP', 'data-simple-file')}${options}`, actions('Şəkli hazırla', 'data-simple-run'))}${resultPanel()}`;
+  }
+  if (transformKinds.has(tool.kind)) {
+    const options = tool.kind === 'text-case' ? '<div class="field"><label>Çevirmə</label><select class="select" data-mode><option value="upper">BÖYÜK HƏRF</option><option value="lower">kiçik hərf</option><option value="title">Başlıq Forması</option><option value="sentence">Cümlə forması</option></select></div>' : tool.kind === 'line-sort' ? '<div class="field"><label>Sıra</label><select class="select" data-mode><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' : '';
+    return `${inputPanel(`${textArea()}${options}`, actions('Emal et', 'data-simple-run'))}${resultPanel()}`;
+  }
+  if (tool.kind === 'lorem') return `${inputPanel('<div class="field"><label>Abzas sayı</label><input class="input" type="number" min="1" max="12" value="3" data-count /></div>', actions('Mətn yarat', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'text-diff') return `${inputPanel(`${textArea('Birinci mətn', 'data-left')}${textArea('İkinci mətn', 'data-right')}`, actions('Müqayisə et', 'data-simple-run'))}${resultPanel()}`;
+  if (['base64','url-codec'].includes(tool.kind)) return `${inputPanel(textArea(), actions('Kodla', 'data-encode', '<button class="button button-secondary" type="button" data-decode>Geri aç</button>'))}${resultPanel()}`;
+  if (tool.kind === 'jwt') return `${inputPanel(textArea('JWT token', 'data-simple-input', 'eyJ...'), actions('Tokeni oxu', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'hash') return `${inputPanel(`${textArea()}<div class="field"><label>Alqoritm</label><select class="select" data-algorithm><option>SHA-256</option><option>SHA-512</option></select></div>`, actions('Hash yarat', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'uuid') return `${inputPanel('<div class="field"><label>Say</label><input class="input" type="number" min="1" max="50" value="5" data-count /></div>', actions('UUID yarat', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'timestamp') return `${inputPanel('<div class="field"><label>Unix timestamp</label><input class="input" data-timestamp placeholder="1710000000" /></div><div class="field"><label>Tarix və saat</label><input class="input" type="datetime-local" data-date /></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'regex') return `${inputPanel('<div class="check-row"><div class="field"><label>Pattern</label><input class="input code" data-pattern placeholder="\\b[A-Z]+\\b" /></div><div class="field"><label>Flag</label><input class="input code" data-flags value="gi" /></div></div>'+textArea('Test mətni'), actions('Sına', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'percentage') return `${inputPanel('<div class="check-row"><div class="field"><label>Ədəd</label><input class="input" type="number" data-a /></div><div class="field"><label>Faiz</label><input class="input" type="number" data-b /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'vat') return `${inputPanel('<div class="check-row"><div class="field"><label>Məbləğ</label><input class="input" type="number" data-a /></div><div class="field"><label>ƏDV faizi</label><input class="input" type="number" value="18" data-b /></div></div><div class="field"><label>Hesablama</label><select class="select" data-mode><option value="add">ƏDV əlavə et</option><option value="extract">Məbləğin içindən ƏDV-ni ayır</option></select></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'unit') return `${inputPanel('<div class="field"><label>Dəyər</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>Buradan</label><select class="select" data-from><option value="m">metr</option><option value="km">kilometr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div><div class="field"><label>Buraya</label><select class="select" data-to><option value="km">kilometr</option><option value="m">metr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'loan') return `${inputPanel('<div class="field"><label>Kredit məbləği</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>İllik faiz</label><input class="input" type="number" data-b /></div><div class="field"><label>Müddət (ay)</label><input class="input" type="number" data-c /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'password-check') return `${inputPanel('<div class="field"><label>Parol</label><input class="input" type="text" autocomplete="off" data-simple-input /></div>', actions('Gücünü yoxla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'token') return `${inputPanel('<div class="field"><label>Uzunluq (bayt)</label><input class="input" type="number" min="8" max="128" value="32" data-count /></div>', actions('Token yarat', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'iban') return `${inputPanel('<div class="field"><label>AZ IBAN</label><input class="input code" data-simple-input placeholder="AZ00 XXXX ..." /></div>', actions('IBAN-ı yoxla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'transliterate') return `${inputPanel(`${textArea('Azərbaycan mətni')}<div class="field"><label>İstiqamət</label><select class="select" data-mode><option value="latin-cyr">Latın → Kiril</option><option value="cyr-latin">Kiril → Latın</option></select></div>`, actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
+  return null;
+}
+
+function parsePages(value, count) {
+  const pages = new Set();
+  value.split(',').map((part) => part.trim()).filter(Boolean).forEach((part) => {
+    const [startRaw, endRaw] = part.split('-');
+    const start = Number(startRaw); const end = Number(endRaw || startRaw);
+    if (!Number.isInteger(start) || !Number.isInteger(end)) return;
+    for (let n = Math.min(start, end); n <= Math.max(start, end); n += 1) if (n >= 1 && n <= count) pages.add(n - 1);
+  });
+  return [...pages].sort((a,b) => a-b);
+}
+
+function setupFile(root, multiple = false) {
+  const input = root.querySelector(multiple ? '[data-simple-files]' : '[data-simple-file]');
+  const list = root.querySelector('[data-selected-files]');
+  let files = [];
+  const set = (incoming) => {
+    files = [...(incoming instanceof FileList ? incoming : [incoming])].filter(Boolean);
+    list.innerHTML = files.map((file) => `<div class="file-row"><span>${escapeMarkup(file.name)}</span><span>${(file.size / 1024).toFixed(0)} KB</span></div>`).join('');
+  };
+  input.addEventListener('change', () => set(input.files));
+  const zone = input.closest('[data-drop-zone]');
+  ['dragenter','dragover'].forEach((type) => zone.addEventListener(type, (event) => { event.preventDefault(); zone.classList.add('dragging'); }));
+  ['dragleave','drop'].forEach((type) => zone.addEventListener(type, (event) => { event.preventDefault(); zone.classList.remove('dragging'); }));
+  zone.addEventListener('drop', (event) => set(multiple ? event.dataTransfer.files : event.dataTransfer.files[0]));
+  return () => files;
+}
+
+function escapeMarkup(value) {
+  return String(value).replace(/[&<>'"]/gu, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
+}
+
+function setBusy(button, status, message = '') {
+  const busy = Boolean(message);
+  button.disabled = busy;
+  button.toggleAttribute('aria-busy', busy);
+  status.hidden = !busy;
+  status.textContent = message;
+}
+
+function resultText(ctx, value, label = 'Nəticə') {
+  ctx.showResult(`<div class="field"><label>${label}</label><button class="button button-secondary" type="button" data-copy-simple>Kopyala</button><pre class="output-code">${ctx.escapeHtml(value)}</pre></div>`, 'success');
+  document.querySelector('[data-copy-simple]').onclick = (event) => ctx.copyText(value, event.currentTarget);
+}
+
+async function imageFrom(file) {
+  const url = URL.createObjectURL(file); const image = new Image();
+  await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url; });
+  URL.revokeObjectURL(url); return image;
+}
+
+export function initSimpleTool(tool, ctx) {
+  if (!simpleToolWorkspace(tool)) return false;
+  const root = document;
+  root.querySelectorAll('.workspace .field').forEach((field, index) => {
+    const label = field.querySelector('label');
+    const control = field.querySelector('input, textarea, select');
+    if (label && control && !control.id) {
+      control.id = `tool-field-${index + 1}`;
+      label.htmlFor = control.id;
+    }
+  });
+  const reset = root.querySelector('[data-reset]');
+  if (reset) reset.onclick = () => location.reload();
+
+  if (pdfKinds.has(tool.kind)) {
+    const files = setupFile(root);
+    const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
+    button.onclick = async () => {
+      const file = files()[0]; if (!file) return ctx.showResult('', 'PDF faylını seçin.');
+      setBusy(button, status, 'PDF hazırlanır…');
+      try {
+        const source = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+        let indices = [...source.getPageIndices()];
+        if (tool.kind !== 'pdf-clean') {
+          const selected = parsePages(root.querySelector('[data-page-list]').value, source.getPageCount());
+          if (!selected.length) return ctx.showResult('', 'Düzgün səhifə nömrəsi daxil edin.');
+          indices = tool.kind === 'pdf-remove' ? indices.filter((index) => !selected.includes(index)) : selected;
+          if (!indices.length) return ctx.showResult('', 'Nəticədə ən azı bir səhifə qalmalıdır.');
+        }
+        const output = await PDFLib.PDFDocument.create();
+        const copied = await output.copyPages(source, indices); copied.forEach((page) => output.addPage(page));
+        if (tool.kind === 'pdf-clean') { output.setTitle(''); output.setAuthor(''); output.setSubject(''); output.setKeywords([]); output.setProducer('AzToolBox'); output.setCreator('AzToolBox'); }
+        const blob = new Blob([await output.save()], { type: 'application/pdf' });
+        ctx.showResult('<p>Yeni PDF hazırdır.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
+        root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${tool.slug}.pdf`);
+      } catch { ctx.showResult('', 'PDF emal edilə bilmədi. Faylın sağlam olduğunu yoxlayın.'); }
+      finally { setBusy(button, status); }
+    };
+    return true;
+  }
+
+  if (tool.kind === 'image-pdf') {
+    const files = setupFile(root, true);
+    const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
+    button.onclick = async () => {
+      const selected = files(); if (!selected.length) return ctx.showResult('', 'Ən azı bir şəkil seçin.');
+      setBusy(button, status, `${selected.length} şəkil hazırlanır…`);
+      try {
+        const pdf = await PDFLib.PDFDocument.create();
+        for (const [index, file] of selected.entries()) {
+          status.textContent = `${index + 1}/${selected.length} şəkil əlavə olunur`;
+          const bytes = await file.arrayBuffer();
+          const embedded = file.type === 'image/png' ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
+          const page = pdf.addPage([embedded.width, embedded.height]); page.drawImage(embedded, { x:0, y:0, width:embedded.width, height:embedded.height });
+        }
+        const blob = new Blob([await pdf.save()], { type:'application/pdf' });
+        ctx.showResult('<p>Şəkillər PDF sənədinə çevrildi.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
+        root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, 'sekiller.pdf');
+      } catch { ctx.showResult('', 'Şəkillər PDF-ə çevrilə bilmədi.'); }
+      finally { setBusy(button, status); }
+    };
+    return true;
+  }
+
+  if (imageKinds.has(tool.kind)) {
+    const files = setupFile(root); let outputBlob;
+    const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
+    const quality = root.querySelector('[data-quality]');
+    if (quality) quality.oninput = () => { root.querySelector('[data-quality-label]').textContent = `${quality.value}%`; };
+    button.onclick = async () => {
+      const file = files()[0]; if (!file) return ctx.showResult('', 'Şəkli seçin.');
+      setBusy(button, status, 'Şəkil hazırlanır…');
+      try {
+        const image = await imageFrom(file); let width = image.naturalWidth; let height = image.naturalHeight; let angle = 0;
+        if (tool.kind === 'image-crop') { width = Math.min(width, Number(root.querySelector('[data-crop-width]').value) || width); height = Math.min(height, Number(root.querySelector('[data-crop-height]').value) || height); }
+        if (tool.kind === 'image-rotate') { angle = Number(root.querySelector('[data-angle]').value); if (angle % 180) [width,height] = [height,width]; }
+        const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; const c = canvas.getContext('2d');
+        if (tool.kind === 'image-gray') c.filter = 'grayscale(1)';
+        if (tool.kind === 'image-rotate') { c.translate(width/2,height/2); c.rotate(angle*Math.PI/180); c.drawImage(image,-image.naturalWidth/2,-image.naturalHeight/2); }
+        else if (tool.kind === 'image-crop') { const sx=(image.naturalWidth-width)/2, sy=(image.naturalHeight-height)/2; c.drawImage(image,sx,sy,width,height,0,0,width,height); }
+        else c.drawImage(image,0,0,width,height);
+        const type = tool.kind === 'image-convert' ? root.querySelector('[data-format]').value : tool.kind === 'image-compress' ? 'image/jpeg' : 'image/png';
+        const q = tool.kind === 'image-compress' ? Number(quality.value)/100 : .92;
+        outputBlob = await new Promise((resolve) => canvas.toBlob(resolve,type,q));
+        const url = URL.createObjectURL(outputBlob);
+        ctx.showResult(`<img class="image-preview" src="${url}" alt="Hazır şəkil" /><p>${(outputBlob.size/1024).toFixed(0)} KB</p><button class="button button-primary" data-download-simple>Şəkli endir</button>`, 'success');
+        root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(outputBlob, `${tool.slug}.${type.split('/')[1].replace('jpeg','jpg')}`);
+      } catch { ctx.showResult('', 'Şəkil emal edilə bilmədi.'); }
+      finally { setBusy(button, status); }
+    };
+    return true;
+  }
+
+  const run = root.querySelector('[data-simple-run]');
+  if (transformKinds.has(tool.kind)) run.onclick = () => {
+    const input = root.querySelector('[data-simple-input]').value; let output = input;
+    if (tool.kind === 'text-case') { const mode=root.querySelector('[data-mode]').value; output = mode==='upper'?input.toLocaleUpperCase('az'):mode==='lower'?input.toLocaleLowerCase('az'):mode==='title'?input.toLocaleLowerCase('az').replace(/(^|\s)\S/gu,(m)=>m.toLocaleUpperCase('az')):input.toLocaleLowerCase('az').replace(/(^\s*|[.!?]\s+)\S/gu,(m)=>m.toLocaleUpperCase('az')); }
+    if (tool.kind === 'line-sort') output = input.split(/\r?\n/u).sort((a,b)=>a.localeCompare(b,'az')*(root.querySelector('[data-mode]').value==='desc'?-1:1)).join('\n');
+    if (tool.kind === 'line-unique') output = [...new Set(input.split(/\r?\n/u))].join('\n');
+    if (tool.kind === 'space-clean') output = input.split(/\r?\n/u).map((line)=>line.trim().replace(/\s+/gu,' ')).filter(Boolean).join('\n');
+    if (tool.kind === 'slug') output = input.toLocaleLowerCase('az').normalize('NFD').replace(/[\u0300-\u036f]/gu,'').replace(/ə/gu,'e').replace(/ı/gu,'i').replace(/ş/gu,'s').replace(/ç/gu,'c').replace(/ğ/gu,'g').replace(/ö/gu,'o').replace(/ü/gu,'u').replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
+    resultText(ctx, output);
+  };
+  else if (tool.kind === 'lorem') run.onclick = () => { const sentence='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer vel neque vitae sapien luctus aliquet.'; resultText(ctx, Array.from({length:Math.min(12,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>`${sentence} ${sentence}`).join('\n\n')); };
+  else if (tool.kind === 'text-diff') run.onclick = () => { const left=root.querySelector('[data-left]').value.split(/\r?\n/u), right=root.querySelector('[data-right]').value.split(/\r?\n/u); const out=[]; const max=Math.max(left.length,right.length); for(let i=0;i<max;i+=1){if(left[i]===right[i]) out.push(`  ${left[i]??''}`); else { if(left[i]!=null) out.push(`− ${left[i]}`); if(right[i]!=null) out.push(`+ ${right[i]}`); }} resultText(ctx,out.join('\n'),'Fərq'); };
+  else if (['base64','url-codec'].includes(tool.kind)) { const input=()=>root.querySelector('[data-simple-input]').value; root.querySelector('[data-encode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?btoa(unescape(encodeURIComponent(input()))):encodeURIComponent(input()));}catch{ctx.showResult('','Mətn kodlana bilmədi.');}}; root.querySelector('[data-decode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?decodeURIComponent(escape(atob(input()))):decodeURIComponent(input()));}catch{ctx.showResult('','Məlumat geri açıla bilmədi.');}}; }
+  else if (tool.kind === 'jwt') run.onclick = () => { try { const parts=root.querySelector('[data-simple-input]').value.split('.'); const decode=(p)=>JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/gu,'+').replace(/_/gu,'/'))))); resultText(ctx,JSON.stringify({header:decode(parts[0]),payload:decode(parts[1])},null,2)); } catch { ctx.showResult('','JWT formatı düzgün deyil.'); } };
+  else if (tool.kind === 'hash') run.onclick = async () => { const bytes=new TextEncoder().encode(root.querySelector('[data-simple-input]').value); const hash=await crypto.subtle.digest(root.querySelector('[data-algorithm]').value,bytes); resultText(ctx,[...new Uint8Array(hash)].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
+  else if (tool.kind === 'uuid') run.onclick = () => resultText(ctx,Array.from({length:Math.min(50,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>crypto.randomUUID()).join('\n'));
+  else if (tool.kind === 'timestamp') run.onclick = () => { const stamp=root.querySelector('[data-timestamp]').value.trim(), date=root.querySelector('[data-date]').value; if(stamp) resultText(ctx,new Date(Number(stamp)*(stamp.length<=10?1000:1)).toLocaleString('az-AZ')); else if(date) resultText(ctx,String(Math.floor(new Date(date).getTime()/1000))); else resultText(ctx,String(Math.floor(Date.now()/1000)),'Cari timestamp'); };
+  else if (tool.kind === 'regex') run.onclick = () => { try { const regex=new RegExp(root.querySelector('[data-pattern]').value,root.querySelector('[data-flags]').value); const matches=[...root.querySelector('[data-simple-input]').value.matchAll(regex)].map((m,index)=>`${index+1}. ${m[0]} — indeks ${m.index}`); resultText(ctx,matches.join('\n')||'Uyğunluq tapılmadı.'); } catch { ctx.showResult('','Regex sintaksisini yoxlayın.'); } };
+  else if (tool.kind === 'percentage') run.onclick = () => { const a=Number(root.querySelector('[data-a]').value), b=Number(root.querySelector('[data-b]').value); resultText(ctx,`${b}% × ${a} = ${(a*b/100).toLocaleString('az-AZ')}`); };
+  else if (tool.kind === 'vat') run.onclick = () => { const a=Number(root.querySelector('[data-a]').value), b=Number(root.querySelector('[data-b]').value)/100, mode=root.querySelector('[data-mode]').value; const vat=mode==='add'?a*b:a-a/(1+b), total=mode==='add'?a+vat:a; resultText(ctx,`ƏDV: ${vat.toFixed(2)} ₼\nYekun: ${total.toFixed(2)} ₼`); };
+  else if (tool.kind === 'unit') run.onclick = () => { const factors={m:1,km:1000,cm:.01,ft:.3048,in:.0254}; const value=Number(root.querySelector('[data-a]').value)*factors[root.querySelector('[data-from]').value]/factors[root.querySelector('[data-to]').value]; resultText(ctx,value.toLocaleString('az-AZ',{maximumFractionDigits:8})); };
+  else if (tool.kind === 'loan') run.onclick = () => { const principal=Number(root.querySelector('[data-a]').value), rate=Number(root.querySelector('[data-b]').value)/1200, months=Number(root.querySelector('[data-c]').value); const payment=rate?principal*rate*Math.pow(1+rate,months)/(Math.pow(1+rate,months)-1):principal/months; resultText(ctx,`Aylıq ödəniş: ${payment.toFixed(2)} ₼\nÜmumi ödəniş: ${(payment*months).toFixed(2)} ₼\nFaiz məbləği: ${(payment*months-principal).toFixed(2)} ₼`); };
+  else if (tool.kind === 'password-check') run.onclick = () => { const value=root.querySelector('[data-simple-input]').value; let score=0; if(value.length>=8)score++; if(value.length>=12)score++; if(/[A-ZƏÖÜĞŞÇ]/u.test(value)&&/[a-zəöüğşç]/u.test(value))score++; if(/\d/u.test(value))score++; if(/[^\p{L}\p{N}]/u.test(value))score++; const labels=['Çox zəif','Zəif','Orta','Güclü','Çox güclü','Çox güclü']; resultText(ctx,`${labels[score]} — ${score}/5`); };
+  else if (tool.kind === 'token') run.onclick = () => { const bytes=crypto.getRandomValues(new Uint8Array(Math.min(128,Math.max(8,Number(root.querySelector('[data-count]').value)||32)))); resultText(ctx,[...bytes].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
+  else if (tool.kind === 'iban') run.onclick = () => { const iban=root.querySelector('[data-simple-input]').value.replace(/\s+/gu,'').toUpperCase(); let valid=/^AZ\d{2}[A-Z0-9]{24}$/u.test(iban); if(valid){ const rearranged=iban.slice(4)+iban.slice(0,4); const numeric=[...rearranged].map((ch)=>/[A-Z]/u.test(ch)?String(ch.charCodeAt(0)-55):ch).join(''); let rem=0; for(const digit of numeric) rem=(rem*10+Number(digit))%97; valid=rem===1; } resultText(ctx,valid?'IBAN quruluşu və checksum düzgündür.':'IBAN düzgün deyil.'); };
+  else if (tool.kind === 'transliterate') run.onclick = () => { const latin='abcvçdeəfgğhxıijkqlmnoöprsştuüvyzABCVÇDEƏFGĞHXIİJKQLMNOÖPRSŞTUÜVYZ'; const cyr='абҹвчдеәфгғһхыијкҝлмноөпрсштуүвызАБҸВЧДЕӘФГҒҺХЫИЈКҜЛМНОӨПРСШТУҮВЫЗ'; const mode=root.querySelector('[data-mode]').value, from=mode==='latin-cyr'?latin:cyr, to=mode==='latin-cyr'?cyr:latin; resultText(ctx,[...root.querySelector('[data-simple-input]').value].map((ch)=>{const i=from.indexOf(ch); return i<0?ch:to[i];}).join('')); };
+  return true;
+}
