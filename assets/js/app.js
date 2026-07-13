@@ -6,6 +6,13 @@ import { initMotion } from './motion.js';
 import { generateSecurePassword } from './batch2-tools.js';
 import { createResultLifecycle, imageExtension } from './batch4-tools.js';
 import {
+  canonicalToolUrl,
+  categoryCapabilityDescription,
+  requiredVendor,
+  textStatistics,
+  toolSeo,
+} from './batch5-tools.js';
+import {
   LIMITS,
   ToolInputError,
   inspectImageFile,
@@ -35,18 +42,12 @@ function initReveal() {
 function renderHome() {
   const featured = $('[data-featured-tools]');
   const categoryGrid = $('[data-category-grid]');
-  const descriptions = {
-    pdf: 'Birləşdirin, sıxın və səhifələri idarə edin.',
-    image: 'Ölçü, format və görünüşü dəyişin.',
-    text: 'Mətni sayın, təmizləyin və müqayisə edin.',
-    developer: 'Kod və məlumat formatlarını emal edin.',
-    business: 'Gündəlik hesablamaları sürətləndirin.',
-    security: 'Parol və təhlükəsizlik yoxlamaları aparın.',
-    az: 'Azərbaycan dili ilə bağlı işləri həll edin.'
-  };
+  document.title = `AzToolBox — gündəlik işlər üçün ${tools.length} brauzer aləti`;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', `PDF, şəkil, mətn, developer və hesablama işləri üçün ${tools.length} sürətli, qeydiyyatsız və brauzerdə işləyən alət.`);
   $('[data-total-tools]')?.replaceChildren(document.createTextNode(String(tools.length)));
+  $('[data-total-tools-link]')?.replaceChildren(document.createTextNode(String(tools.length)));
   if (featured) featured.innerHTML = tools.filter((tool) => tool.featured).slice(0, 6).map((tool) => `<article class="quick-tool-card category-${tool.category}">${toolIcon(tool)}<div><strong><a href="${toolUrl(base, tool.slug)}">${tool.name}</a></strong><p>${tool.description}</p></div><span aria-hidden="true">→</span></article>`).join('');
-  if (categoryGrid) categoryGrid.innerHTML = categories.map((category) => `<a class="dashboard-category-card category-${category.id}" href="${base}/tools/?category=${category.id}">${toolIcon({ category: category.id, icon: String(category.count).padStart(2,'0') })}<footer><div><strong>${category.name}</strong><p>${descriptions[category.id]}</p></div><span>${category.count} alət →</span></footer></a>`).join('');
+  if (categoryGrid) categoryGrid.innerHTML = categories.map((category) => `<a class="dashboard-category-card category-${category.id}" href="${base}/tools/?category=${category.id}">${toolIcon({ category: category.id, icon: String(category.count).padStart(2,'0') })}<footer><div><strong>${category.name}</strong><p>${categoryCapabilityDescription(category.id, tools)}</p></div><span>${category.count} alət →</span></footer></a>`).join('');
 }
 
 function renderCatalog() {
@@ -62,6 +63,8 @@ function renderCatalog() {
   const emptyCopy = $('[data-empty-copy]');
   const emptyAction = $('[data-empty-action]');
   const params = new URLSearchParams(location.search);
+  document.title = `${tools.length} alət — AzToolBox`;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', `AzToolBox-un ${tools.length} alətdən ibarət axtarılan və kateqoriyalara bölünmüş kataloqu.`);
   let activeCategory = params.get('category') || 'all';
   let view = params.get('view') || 'all';
   const filters = $('[data-filter-row]');
@@ -149,7 +152,7 @@ function toolWorkspace(tool) {
   const commonInput = `<div class="workspace-panel"><h2>Giriş</h2>`;
   const result = `<section class="workspace-panel result-panel" aria-live="polite"><h2>Nəticə</h2><div class="result-empty" data-empty><div><strong>Nəticə burada görünəcək</strong><span>Soldakı məlumatı daxil edib əsas əməliyyatı başladın.</span></div></div><div class="result-output" data-output hidden></div></section>`;
   if (tool.kind === 'json') return `${commonInput}<div class="field"><label for="json-input">JSON məlumatı</label><textarea class="textarea code" id="json-input" maxlength="${LIMITS.textChars}" data-json-input aria-describedby="json-hint json-error" placeholder='{"aztoolbox": true}'></textarea><span class="field-hint" id="json-hint">Məlumat cihazınızdan kənara göndərilmir. Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} simvol.</span><span class="field-error" id="json-error" data-field-error role="alert" hidden></span></div><div class="workspace-actions"><button class="button button-primary" type="button" data-json-format>Formatla</button><button class="button button-secondary" type="button" data-json-minify>Minify</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
-  if (tool.kind === 'text') return `${commonInput}<div class="field"><label for="text-input">Mətn</label><textarea class="textarea" id="text-input" maxlength="${LIMITS.textChars}" data-text-input placeholder="Mətni buraya yazın və ya yapışdırın..."></textarea><span class="field-hint">Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} simvol.</span></div><div class="workspace-actions"><button class="button button-secondary" type="button" data-copy-input>Kopyala</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div><section class="workspace-panel result-panel"><h2>Canlı statistika</h2><div class="stats-grid" data-text-stats></div></section>`;
+  if (tool.kind === 'text') return `${commonInput}<div class="field"><label for="text-input">Mətn</label><textarea class="textarea" id="text-input" maxlength="${LIMITS.textChars}" data-text-input placeholder="Mətni buraya yazın və ya yapışdırın..."></textarea><span class="field-hint">Simvol sayı insanın gördüyü qrafemlər üzrə hesablanır. Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} giriş vahidi.</span></div><div class="workspace-actions"><button class="button button-secondary" type="button" data-copy-input>Kopyala</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div><section class="workspace-panel result-panel"><h2>Canlı statistika</h2><div class="stats-grid" data-text-stats></div><p class="sr-only" data-text-announcement aria-live="polite" aria-atomic="true"></p></section>`;
   if (tool.kind === 'password') return `${commonInput}<div class="field"><label for="password-length">Uzunluq</label><div class="range-row"><input id="password-length" type="range" min="8" max="64" value="20" data-password-length /><input class="input" type="number" min="8" max="64" value="20" data-password-number aria-label="Parol uzunluğu" /></div></div><div class="field"><label>Simvol qrupları</label><div class="check-row"><label class="check-pill"><input type="checkbox" checked data-password-set="upper" /> Böyük hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="lower" /> Kiçik hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="number" /> Rəqəm</label><label class="check-pill"><input type="checkbox" checked data-password-set="symbol" /> Simvol</label></div></div><div class="workspace-actions"><button class="button button-primary" type="button" data-password-generate>Parol yarat</button></div></div>${result}`;
   if (tool.kind === 'image') return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="image/png,image/jpeg,image/webp" data-image-file /><div><span class="tool-icon category-image">IMG</span><strong>Şəkli buraya sürükləyin</strong><p>PNG, JPG və WebP · brauzerdə emal</p><span class="button button-secondary">Şəkil seç</span></div></label><div class="selected-files" data-selected-files></div><div class="check-row"><div class="field"><label for="image-width">En</label><input class="input" id="image-width" type="number" min="1" data-image-width /></div><div class="field"><label for="image-height">Hündürlük</label><input class="input" id="image-height" type="number" min="1" data-image-height /></div></div><label class="check-pill"><input type="checkbox" checked data-image-ratio /> Nisbəti qoru</label><p class="privacy-note"><span aria-hidden="true">⌁</span>Statik PNG, JPG və WebP çıxışında mənbə formatı saxlanılır; animasiyalı girişlər rədd edilir.</p><div class="workspace-actions"><button class="button button-primary" type="button" data-image-resize disabled>Ölçünü dəyiş</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
   if (tool.kind === 'qr') return `${commonInput}<div class="field"><label for="qr-input">Mətn və ya link</label><textarea class="textarea" maxlength="${LIMITS.qrBytes}" style="min-height:180px" id="qr-input" data-qr-input aria-describedby="qr-hint qr-error" placeholder="https://aztoolbox.example"></textarea><span class="field-hint" id="qr-hint">Kənar boşluqlar olduğu kimi saxlanır. Maksimum ${LIMITS.qrBytes} UTF-8 bayt.</span><span class="field-error" id="qr-error" data-field-error role="alert" hidden></span></div><div class="field"><label for="qr-size">Ölçü</label><select class="select" id="qr-size" data-qr-size><option value="192">192 px</option><option value="256" selected>256 px</option><option value="384">384 px</option></select></div><div class="workspace-actions"><button class="button button-primary" type="button" data-qr-generate>QR yarat</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
@@ -185,9 +188,15 @@ function initToolBehavior(tool) {
     $('[data-json-format]').onclick = () => run(false); $('[data-json-minify]').onclick = () => run(true); $('[data-reset]').onclick = () => { input.value = ''; clearFieldError(); clearResult(); };
   }
   if (tool.kind === 'text') {
-    const input = $('[data-text-input]'); const stats = $('[data-text-stats]');
-    const update = () => { const text = input.value; const words = text.trim() ? text.trim().split(/\s+/u).length : 0; const sentences = text.trim() ? text.split(/[.!?]+/u).filter((item) => item.trim()).length : 0; const lines = text ? text.split(/\r?\n/u).length : 0; stats.innerHTML = [['Söz',words],['Simvol',text.length],['Boşluqsuz',text.replace(/\s/gu,'').length],['Cümlə',sentences],['Sətir',lines],['Oxuma vaxtı',`${Math.max(0,Math.ceil(words/200))} dəq`]].map(([label,value]) => `<div class="stat-card"><strong>${value}</strong><span>${label}</span></div>`).join(''); };
-    input.oninput = update; $('[data-copy-input]').onclick = (event) => copyText(input.value, event.currentTarget); $('[data-reset]').onclick = () => { input.value = ''; update(); }; update();
+    const input = $('[data-text-input]'); const stats = $('[data-text-stats]'); const announcement = $('[data-text-announcement]'); let announcementTimer;
+    const update = (announce = true) => {
+      const current = textStatistics(input.value);
+      stats.innerHTML = [['Söz',current.words],['Simvol',current.characters],['Boşluqsuz',current.charactersWithoutWhitespace],['Cümlə',current.sentences],['Sətir',current.lines],['Oxuma vaxtı',`${current.readingMinutes} dəq`]].map(([label,value]) => `<div class="stat-card"><strong>${value}</strong><span>${label}</span></div>`).join('');
+      clearTimeout(announcementTimer);
+      if (announce) announcementTimer = setTimeout(() => { announcement.textContent = `${current.words} söz, ${current.characters} simvol, ${current.lines} sətir.`; }, 300);
+      else announcement.textContent = '';
+    };
+    input.oninput = () => update(); $('[data-copy-input]').onclick = (event) => copyText(input.value, event.currentTarget); $('[data-reset]').onclick = () => { input.value = ''; update(); }; update(false);
   }
   if (tool.kind === 'password') {
     const range = $('[data-password-length]'); const number = $('[data-password-number]');
@@ -326,30 +335,90 @@ function bindResultInvalidation(root) {
   root.addEventListener('change', invalidate, true);
 }
 
-function renderToolPage() {
+function setMetaContent(name, content) {
+  let meta = document.querySelector(`meta[name="${name}"]`);
+  if (!meta) { meta = document.createElement('meta'); meta.name = name; document.head.append(meta); }
+  meta.content = content;
+  return meta;
+}
+
+function setToolDocumentMetadata(tool) {
+  const seo = toolSeo(tool);
+  document.title = seo.title;
+  setMetaContent('description', seo.description);
+  document.querySelector('meta[name="robots"]')?.remove();
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
+  canonical.href = canonicalToolUrl(location.href, tool.slug);
+}
+
+const vendorLoads = new Map();
+function loadVendor(dependency) {
+  if (!dependency || window[dependency.global]) return Promise.resolve();
+  if (vendorLoads.has(dependency.file)) return vendorLoads.get(dependency.file);
+  const promise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `${base}/assets/vendor/${dependency.file}`;
+    script.dataset.toolVendor = dependency.file;
+    script.onload = () => window[dependency.global] ? resolve() : reject(new Error(`${dependency.label} hazır deyil.`));
+    script.onerror = () => reject(new Error(`${dependency.label} yüklənmədi.`));
+    document.head.append(script);
+  });
+  vendorLoads.set(dependency.file, promise);
+  return promise;
+}
+
+async function renderToolPage() {
   const root = $('[data-tool-root]');
   const slug = new URLSearchParams(location.search).get('slug');
   const tool = slug ? tools.find((item) => item.slug === slug) : null;
   if (!tool) {
     document.title = 'Alət tapılmadı — AzToolBox';
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Sorğu edilən AzToolBox aləti tapılmadı.');
+    setMetaContent('description', 'Sorğu edilən AzToolBox aləti tapılmadı. Naməlum ünvan heç bir alətə yönləndirilmədi.');
+    setMetaContent('robots', 'noindex');
+    document.querySelector('link[rel="canonical"]')?.remove();
     root.dataset.toolNotFound = '';
     root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>Tapılmadı</span></nav>
       <section class="workspace-panel" data-not-found><h1>Alət tapılmadı</h1><p>Bu ünvan heç bir mövcud alətə uyğun deyil.</p><a class="button button-primary" href="${base}/tools/">Bütün alətlərə bax</a></section>`;
     return;
   }
-  recordRecent(tool.slug); document.title = `${tool.name} — AzToolBox`;
+  recordRecent(tool.slug); setToolDocumentMetadata(tool);
   root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>${tool.name}</span></nav>
     <header class="tool-header"><div class="tool-heading category-${tool.category}">${toolIcon(tool)}<div><h1>${tool.name}</h1><p>${tool.description}</p><div class="tool-meta"><span class="badge">${tool.categoryName}</span><span class="badge badge-success">✓ Brauzerdə emal olunur</span></div></div></div><button class="favorite-button" type="button" data-favorite="${tool.slug}" aria-label="${tool.name}: ${getFavorites().includes(tool.slug) ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${getFavorites().includes(tool.slug)}">${getFavorites().includes(tool.slug) ? '★' : '☆'}</button></header>
     <div class="workspace">${toolWorkspace(tool)}</div>
     <section class="related-tools"><div class="section-heading"><div><h2>Oxşar alətlər</h2><p>İş axınınıza uyğun digər seçimlər.</p></div></div><div class="tool-grid">${[...tools.filter((item) => item.slug !== tool.slug && item.category === tool.category), ...tools.filter((item) => item.slug !== tool.slug && item.category !== tool.category)].slice(0,3).map((item) => toolCard(item, base)).join('')}</div></section>`;
   bindResultInvalidation(root);
+  const dependency = requiredVendor(tool.kind);
+  if (dependency) {
+    const workspace = root.querySelector('.workspace');
+    const controls = $$('button, input, textarea, select', workspace);
+    const disabledStates = controls.map((control) => control.disabled);
+    workspace.setAttribute('aria-busy', 'true');
+    controls.forEach((control) => { control.disabled = true; });
+    try { await loadVendor(dependency); }
+    catch {
+      workspace.removeAttribute('aria-busy');
+      showResult('', `${dependency.label} yüklənmədi. Səhifəni yeniləyin və yenidən cəhd edin.`);
+      return;
+    }
+    workspace.removeAttribute('aria-busy');
+    controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+  }
   initToolBehavior(tool);
 }
 
 function initFeedback() {
   const form = $('[data-feedback-form]'); if (!form) return;
-  form.addEventListener('submit', (event) => { event.preventDefault(); const status = $('[data-feedback-status]'); status.hidden = false; status.textContent = 'Rəyiniz lokal olaraq hazırlandı. Bu statik versiyada serverə göndərilmir.'; form.reset(); });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const draft = ['AzToolBox rəyi', data.get('name') ? `Ad: ${data.get('name')}` : '', data.get('email') ? `E-poçt: ${data.get('email')}` : '', '', String(data.get('message') || '')].filter((line, index) => line || index === 3).join('\n');
+    const status = $('[data-feedback-status]');
+    status.hidden = false;
+    status.innerHTML = `<p>Rəy mətni lokal hazırlandı və serverə göndərilmədi.</p><div class="workspace-actions"><button class="button button-secondary" type="button" data-feedback-copy>Mətni kopyala</button><a class="button button-secondary" data-feedback-email>E-poçtda aç</a></div>`;
+    $('[data-feedback-copy]').onclick = (copyEvent) => copyText(draft, copyEvent.currentTarget);
+    $('[data-feedback-email]').href = `mailto:?subject=${encodeURIComponent('AzToolBox rəyi')}&body=${encodeURIComponent(draft)}`;
+  });
 }
 
 if (page === 'home') renderHome();

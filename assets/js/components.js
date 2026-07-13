@@ -1,16 +1,16 @@
 import { tools, categories, toolUrl } from './tools-data.js';
+import { readStoredList, sanitizeToolSlugs, writeStoredList } from './batch5-tools.js';
 
 const themeKey = 'aztoolbox-theme';
 const favoriteKey = 'aztoolbox-favorites';
 const recentKey = 'aztoolbox-recent';
+const validToolSlugs = new Set(tools.map((tool) => tool.slug));
 
 export const getBase = () => document.body.dataset.base || '.';
-export const readList = (key) => {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-};
-export const writeList = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-export const getFavorites = () => readList(favoriteKey);
-export const getRecent = () => readList(recentKey);
+export const readList = (key) => readStoredList(localStorage, key);
+export const writeList = (key, value) => writeStoredList(localStorage, key, value);
+export const getFavorites = () => sanitizeToolSlugs(readList(favoriteKey), validToolSlugs);
+export const getRecent = () => sanitizeToolSlugs(readList(recentKey), validToolSlugs, 8);
 export const recordRecent = (slug) => {
   const next = [slug, ...getRecent().filter((item) => item !== slug)].slice(0, 8);
   writeList(recentKey, next);
@@ -41,7 +41,7 @@ export const toolCard = (tool, base = getBase()) => {
 function setTheme(preference) {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const resolved = preference === 'system' ? (dark ? 'dark' : 'light') : preference;
-  localStorage.setItem(themeKey, preference);
+  try { localStorage.setItem(themeKey, preference); } catch {}
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePreference = preference;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#070b14' : '#f7f9fd');
@@ -293,5 +293,7 @@ document.addEventListener('click', (event) => {
 });
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if ((localStorage.getItem(themeKey) || 'light') === 'system') setTheme('system');
+  let preference = 'light';
+  try { preference = localStorage.getItem(themeKey) || 'light'; } catch {}
+  if (preference === 'system') setTheme('system');
 });
