@@ -17,7 +17,7 @@ const rawTools = [
   define('pdf-splitter', 'PDF bölücü', 'Seçilmiş səhifələri ayrıca PDF kimi çıxar.', 'pdf', 'SPL', 'pdf-split', ['split', 'böl', 'səhifə'], true),
   define('pdf-page-remover', 'PDF səhifə silici', 'Lazımsız səhifələri sənəddən çıxar.', 'pdf', 'DEL', 'pdf-remove', ['remove', 'sil', 'səhifə']),
   define('pdf-page-extractor', 'PDF səhifə çıxarıcı', 'Lazım olan səhifələrdən yeni PDF yarat.', 'pdf', 'EXT', 'pdf-extract', ['extract', 'çıxar', 'səhifə']),
-  define('image-to-pdf', 'Şəkildən PDF', 'JPG və PNG şəkillərini bir PDF sənədinə çevir.', 'pdf', 'IMG', 'image-pdf', ['image', 'jpg', 'png', 'pdf']),
+  define('image-to-pdf', 'Şəkildən PDF', 'JPG, PNG və WebP şəkillərini bir PDF sənədinə çevir.', 'pdf', 'IMG', 'image-pdf', ['image', 'jpg', 'png', 'webp', 'pdf']),
   define('pdf-metadata-remover', 'PDF metadata təmizləyici', 'Sənədin müəllif və başlıq məlumatlarını təmizlə.', 'pdf', 'META', 'pdf-clean', ['metadata', 'privacy', 'məxfilik']),
 
   define('image-resizer', 'Şəkil ölçü dəyişdirici', 'Şəkli dəqiq piksel ölçüsünə gətir.', 'image', 'SIZE', 'image', ['resize', 'ölçü', 'png', 'jpg'], true),

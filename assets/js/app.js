@@ -3,6 +3,7 @@ import { tools, categories, toolUrl } from './tools-data.js';
 import { getBase, getFavorites, getRecent, recordRecent, toolCard, toolIcon } from './components.js';
 import { simpleToolWorkspace, initSimpleTool } from './simple-tools.js';
 import { initMotion } from './motion.js';
+import { generateSecurePassword } from './batch2-tools.js';
 import {
   LIMITS,
   ToolInputError,
@@ -184,9 +185,21 @@ function initToolBehavior(tool) {
   }
   if (tool.kind === 'password') {
     const range = $('[data-password-length]'); const number = $('[data-password-number]');
-    const sync = (value) => { const next = Math.max(8, Math.min(64, Number(value) || 20)); range.value = next; number.value = next; };
-    range.oninput = () => sync(range.value); number.oninput = () => sync(number.value);
-    $('[data-password-generate]').onclick = () => { const pools = { upper:'ABCDEFGHJKLMNPQRSTUVWXYZ', lower:'abcdefghijkmnopqrstuvwxyz', number:'23456789', symbol:'!@#$%&*+-=?' }; const chosen = $$('[data-password-set]:checked').map((item) => pools[item.dataset.passwordSet]); if (!chosen.length) { showResult('', 'Ən azı bir simvol qrupu seçin.'); return; } const pool = chosen.join(''); const bytes = crypto.getRandomValues(new Uint32Array(Number(range.value))); const value = [...bytes].map((item) => pool[item % pool.length]).join(''); showResult(`<div class="field"><label>Hazır parol</label><div class="file-row"><code>${value}</code><button class="button button-secondary" type="button" data-copy-result>Kopyala</button></div></div>`, 'success'); $('[data-copy-result]').onclick = (event) => copyText(value, event.currentTarget); };
+    range.oninput = () => { number.value = range.value; };
+    number.oninput = () => {
+      const value = Number(number.value);
+      if (Number.isInteger(value) && value >= 8 && value <= 64) range.value = String(value);
+    };
+    $('[data-password-generate]').onclick = () => {
+      clearResult();
+      try {
+        const groups = $$('[data-password-set]:checked').map((item) => item.dataset.passwordSet);
+        const value = generateSecurePassword({ length: number.value, groups });
+        range.value = number.value;
+        showResult(`<div class="field"><label>Hazır parol</label><div class="file-row"><code>${escapeHtml(value)}</code><button class="button button-secondary" type="button" data-copy-result>Kopyala</button></div></div>`, 'success');
+        $('[data-copy-result]').onclick = (event) => copyText(value, event.currentTarget);
+      } catch (error) { showResult('', error?.message || 'Parol yaradıla bilmədi.'); }
+    };
   }
   if (tool.kind === 'image') {
     const fileInput = $('[data-image-file]'); const width = $('[data-image-width]'); const height = $('[data-image-height]'); const ratio = $('[data-image-ratio]'); const button = $('[data-image-resize]'); let image = null; let file = null; let aspect = 1;

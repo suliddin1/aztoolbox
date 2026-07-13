@@ -1,5 +1,10 @@
 import { cleanPdfMetadata } from './pdf-tools.js';
 import {
+  assessPasswordStrength,
+  transliterateAzerbaijani,
+  validateAzIban,
+} from './batch2-tools.js';
+import {
   LIMITS,
   ToolInputError,
   formatBytes,
@@ -53,7 +58,7 @@ export function simpleToolWorkspace(tool) {
   if (tool.kind === 'vat') return `${inputPanel('<div class="check-row"><div class="field"><label>Məbləğ</label><input class="input" type="number" data-a /></div><div class="field"><label>ƏDV faizi</label><input class="input" type="number" value="18" data-b /></div></div><div class="field"><label>Hesablama</label><select class="select" data-mode><option value="add">ƏDV əlavə et</option><option value="extract">Məbləğin içindən ƏDV-ni ayır</option></select></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'unit') return `${inputPanel('<div class="field"><label>Dəyər</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>Buradan</label><select class="select" data-from><option value="m">metr</option><option value="km">kilometr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div><div class="field"><label>Buraya</label><select class="select" data-to><option value="km">kilometr</option><option value="m">metr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'loan') return `${inputPanel('<div class="field"><label>Kredit məbləği</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>İllik faiz</label><input class="input" type="number" data-b /></div><div class="field"><label>Müddət (ay)</label><input class="input" type="number" data-c /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'password-check') return `${inputPanel('<div class="field"><label>Parol</label><input class="input" type="text" autocomplete="off" data-simple-input /></div>', actions('Gücünü yoxla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'password-check') return `${inputPanel(`<div class="field"><label>Parol</label><input class="input" type="password" autocomplete="off" maxlength="${LIMITS.textChars}" data-simple-input /><span class="field-hint">Yoxlama lokaldır; parol cihazınızdan kənara göndərilmir.</span></div>`, actions('Gücünü yoxla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'token') return `${inputPanel('<div class="field"><label>Uzunluq (bayt)</label><input class="input" type="number" min="8" max="128" value="32" data-count /></div>', actions('Token yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'iban') return `${inputPanel('<div class="field"><label>AZ IBAN</label><input class="input code" data-simple-input placeholder="AZ00 XXXX ..." /></div>', actions('IBAN-ı yoxla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'transliterate') return `${inputPanel(`${textArea('Azərbaycan mətni')}<div class="field"><label>İstiqamət</label><select class="select" data-mode><option value="latin-cyr">Latın → Kiril</option><option value="cyr-latin">Kiril → Latın</option></select></div>`, actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
@@ -103,6 +108,32 @@ async function imageFrom(file) {
   }
 }
 
+async function inspectImageForPdf(file) {
+  const header = new Uint8Array(await file.slice(0, 6).arrayBuffer());
+  const gif = header.length === 6 && header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46
+    && header[3] === 0x38 && (header[4] === 0x37 || header[4] === 0x39) && header[5] === 0x61;
+  if (gif) throw new ToolInputError('Bu alət animasiyanı saxlamır. Statik PNG, JPG və ya WebP seçin.');
+  const info = await inspectImageFile(file);
+  if (info.animated) throw new ToolInputError('Bu alət animasiyanı saxlamır. Statik PNG, JPG və ya WebP seçin.');
+  return info;
+}
+
+async function rasterizeImageForPdf(file, sourceInfo) {
+  const decodeSource = file.type === sourceInfo.type ? file : new Blob([await file.arrayBuffer()], { type: sourceInfo.type });
+  const image = await imageFrom(decodeSource);
+  const dimensions = validateImageDimensions(image.naturalWidth, image.naturalHeight);
+  const canvas = document.createElement('canvas');
+  canvas.width = dimensions.width; canvas.height = dimensions.height;
+  const context = canvas.getContext('2d');
+  if (!context) throw new ToolInputError('Brauzer şəkli PDF üçün hazırlaya bilmədi.');
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob?.size || blob.type !== 'image/png') throw new ToolInputError('Brauzer şəkli PDF üçün hazırlaya bilmədi.');
+  validateGeneratedSize(blob.size, LIMITS.imageFileBytes, 'Şəkil rasteri');
+  return { bytes: await blob.arrayBuffer(), ...dimensions };
+}
+
 const userMessage = (error, fallback) => error instanceof ToolInputError ? error.message : fallback;
 
 export function initSimpleTool(tool, ctx) {
@@ -121,7 +152,7 @@ export function initSimpleTool(tool, ctx) {
   root.querySelectorAll('[data-simple-run], [data-encode], [data-decode]').forEach((button) => {
     button.addEventListener('click', (event) => {
       try {
-        root.querySelectorAll('.workspace textarea, .workspace input:not([type]), .workspace input[type="text"], .workspace input[type="search"]').forEach((control) => {
+        root.querySelectorAll('.workspace textarea, .workspace input:not([type]), .workspace input[type="text"], .workspace input[type="search"], .workspace input[type="password"]').forEach((control) => {
           const limit = tool.kind === 'regex' && control.matches('[data-pattern]') ? LIMITS.regexPatternChars
             : tool.kind === 'regex' && control.matches('[data-simple-input]') ? LIMITS.regexTextChars
               : LIMITS.textChars;
@@ -182,14 +213,15 @@ export function initSimpleTool(tool, ctx) {
       try {
         validateFileSet(selected, { fileBytes: LIMITS.imageFileBytes });
         validatePdfPageCount(selected.length);
+        const inspected = [];
+        for (const file of selected) inspected.push({ file, info: await inspectImageForPdf(file) });
         const pdf = await PDFLib.PDFDocument.create();
-        for (const [index, file] of selected.entries()) {
+        for (const [index, entry] of inspected.entries()) {
           status.textContent = `${index + 1}/${selected.length} şəkil əlavə olunur`;
-          await inspectImageFile(file);
-          const bytes = await file.arrayBuffer();
-          const embedded = file.type === 'image/png' ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
-          validateImageDimensions(Math.round(embedded.width), Math.round(embedded.height));
-          const page = pdf.addPage([embedded.width, embedded.height]); page.drawImage(embedded, { x:0, y:0, width:embedded.width, height:embedded.height });
+          const raster = await rasterizeImageForPdf(entry.file, entry.info);
+          const embedded = await pdf.embedPng(raster.bytes);
+          const page = pdf.addPage([raster.width, raster.height]);
+          page.drawImage(embedded, { x: 0, y: 0, width: raster.width, height: raster.height });
         }
         const outputBytes = await pdf.save();
         validateGeneratedSize(outputBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
@@ -280,9 +312,26 @@ export function initSimpleTool(tool, ctx) {
   else if (tool.kind === 'vat') run.onclick = () => { const a=Number(root.querySelector('[data-a]').value), b=Number(root.querySelector('[data-b]').value)/100, mode=root.querySelector('[data-mode]').value; const vat=mode==='add'?a*b:a-a/(1+b), total=mode==='add'?a+vat:a; resultText(ctx,`ƏDV: ${vat.toFixed(2)} ₼\nYekun: ${total.toFixed(2)} ₼`); };
   else if (tool.kind === 'unit') run.onclick = () => { const factors={m:1,km:1000,cm:.01,ft:.3048,in:.0254}; const value=Number(root.querySelector('[data-a]').value)*factors[root.querySelector('[data-from]').value]/factors[root.querySelector('[data-to]').value]; resultText(ctx,value.toLocaleString('az-AZ',{maximumFractionDigits:8})); };
   else if (tool.kind === 'loan') run.onclick = () => { const principal=Number(root.querySelector('[data-a]').value), rate=Number(root.querySelector('[data-b]').value)/1200, months=Number(root.querySelector('[data-c]').value); const payment=rate?principal*rate*Math.pow(1+rate,months)/(Math.pow(1+rate,months)-1):principal/months; resultText(ctx,`Aylıq ödəniş: ${payment.toFixed(2)} ₼\nÜmumi ödəniş: ${(payment*months).toFixed(2)} ₼\nFaiz məbləği: ${(payment*months-principal).toFixed(2)} ₼`); };
-  else if (tool.kind === 'password-check') run.onclick = () => { const value=root.querySelector('[data-simple-input]').value; let score=0; if(value.length>=8)score++; if(value.length>=12)score++; if(/[A-ZƏÖÜĞŞÇ]/u.test(value)&&/[a-zəöüğşç]/u.test(value))score++; if(/\d/u.test(value))score++; if(/[^\p{L}\p{N}]/u.test(value))score++; const labels=['Çox zəif','Zəif','Orta','Güclü','Çox güclü','Çox güclü']; resultText(ctx,`${labels[score]} — ${score}/5`); };
+  else if (tool.kind === 'password-check') run.onclick = () => {
+    const assessment = assessPasswordStrength(root.querySelector('[data-simple-input]').value);
+    if (assessment.empty) { ctx.clearResult(); ctx.showResult('', 'Parolu daxil edin.'); return; }
+    resultText(ctx, `Qiymətləndirmə: ${assessment.summary} — ${assessment.score}/4\nSəbəb: ${assessment.reasons.join(' ')}\nTövsiyə: ${assessment.suggestions.join(' ')}\nQeyd: Bu yalnız lokal təxmini qiymətləndirmədir və real təhlükəsizliyə zəmanət vermir.`);
+  };
   else if (tool.kind === 'token') run.onclick = () => { const bytes=crypto.getRandomValues(new Uint8Array(Math.min(128,Math.max(8,Number(root.querySelector('[data-count]').value)||32)))); resultText(ctx,[...bytes].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
-  else if (tool.kind === 'iban') run.onclick = () => { const iban=root.querySelector('[data-simple-input]').value.replace(/\s+/gu,'').toUpperCase(); let valid=/^AZ\d{2}[A-Z0-9]{24}$/u.test(iban); if(valid){ const rearranged=iban.slice(4)+iban.slice(0,4); const numeric=[...rearranged].map((ch)=>/[A-Z]/u.test(ch)?String(ch.charCodeAt(0)-55):ch).join(''); let rem=0; for(const digit of numeric) rem=(rem*10+Number(digit))%97; valid=rem===1; } resultText(ctx,valid?'IBAN quruluşu və checksum düzgündür.':'IBAN düzgün deyil.'); };
-  else if (tool.kind === 'transliterate') run.onclick = () => { const latin='abcvçdeəfgğhxıijkqlmnoöprsştuüvyzABCVÇDEƏFGĞHXIİJKQLMNOÖPRSŞTUÜVYZ'; const cyr='абҹвчдеәфгғһхыијкҝлмноөпрсштуүвызАБҸВЧДЕӘФГҒҺХЫИЈКҜЛМНОӨПРСШТУҮВЫЗ'; const mode=root.querySelector('[data-mode]').value, from=mode==='latin-cyr'?latin:cyr, to=mode==='latin-cyr'?cyr:latin; resultText(ctx,[...root.querySelector('[data-simple-input]').value].map((ch)=>{const i=from.indexOf(ch); return i<0?ch:to[i];}).join('')); };
+  else if (tool.kind === 'iban') run.onclick = () => {
+    const result = validateAzIban(root.querySelector('[data-simple-input]').value);
+    const errors = {
+      empty: 'IBAN daxil edin.',
+      'country-or-length': 'AZ IBAN “AZ”, 2 yoxlama rəqəmi və 24 BBAN simvolundan ibarət olmalıdır.',
+      'bank-identifier': 'AZ IBAN bank identifikatoru 4 hərfdən ibarət olmalıdır.',
+      'account-structure': 'Hesab hissəsi 20 hərf və ya rəqəmdən ibarət olmalıdır.',
+      checksum: 'IBAN checksum düzgün deyil.',
+    };
+    if (!result.valid) { ctx.clearResult(); ctx.showResult('', errors[result.reason] || 'IBAN düzgün deyil.'); return; }
+    resultText(ctx, 'IBAN formatı və checksum uyğundur. Bu yoxlama bankın və hesabın mövcudluğunu təsdiqləmir.');
+  };
+  else if (tool.kind === 'transliterate') run.onclick = () => {
+    resultText(ctx, transliterateAzerbaijani(root.querySelector('[data-simple-input]').value, root.querySelector('[data-mode]').value));
+  };
   return true;
 }

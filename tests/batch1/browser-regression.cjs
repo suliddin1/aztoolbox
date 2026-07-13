@@ -248,10 +248,10 @@ test('Image-to-PDF rejects unsafe input before embed, stays atomic and recovers'
   assert.equal(result.corruptResult.embedCalls, 1, 'corrupt bytes must be rejected before embed/decode');
   assert.match(result.corruptResult.text, /format\u0131 tan\u0131nmad\u0131/u);
   assert.equal(result.corruptResult.buttons, 0);
-  assert.equal(result.mixedResult.embedCalls, 2);
+  assert.equal(result.mixedResult.embedCalls, 1, 'mixed input must be fully preflighted before any image is embedded');
   assert.equal(result.mixedResult.buttons, 0, 'mixed valid/invalid input must not publish a partial PDF');
   assert.doesNotMatch(result.mixedResult.text, /u\u011furla tamamland\u0131/u);
-  assert.equal(result.recovered.embedCalls, 3);
+  assert.equal(result.recovered.embedCalls, 2);
   assert.equal(result.recovered.buttons, 1);
   assert.match(result.recovered.text, /u\u011furla tamamland\u0131/u);
   assert.equal(result.outputSignature, '%PDF-');
