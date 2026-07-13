@@ -250,7 +250,7 @@ test('removed tools stay noindex, open no workspace, add no recent item and rema
   }
 
   await page.goto(`${origin}/tools/`, { waitUntil: 'networkidle0' });
-  assert.equal(await page.$$eval('[data-tools-grid] [data-tool-card]', (cards) => cards.length), 35);
+  assert.equal(await page.$$eval('[data-tools-grid] [data-tool-card]', (cards) => cards.length), 32);
   for (const query of ['Lorem ipsum', 'Slug yaradan']) {
     await page.$eval('[data-catalog-search]', (input, value) => {
       input.value = value;

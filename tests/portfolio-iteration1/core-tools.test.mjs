@@ -17,15 +17,15 @@ import { LIMITS, parsePageSelection } from '../../assets/js/tool-guards.js';
 const expectedCategoryCounts = Object.freeze({
   pdf: 4,
   image: 7,
-  text: 6,
+  text: 4,
   developer: 8,
   business: 5,
-  security: 3,
+  security: 2,
   az: 2,
 });
 
-test('Iteration 1 inventory has 35 unique active tools and registry-derived category counts', () => {
-  assert.equal(tools.length, 35);
+test('portfolio inventory retains unique active tools and registry-derived category counts', () => {
+  assert.equal(tools.length, 32);
   assert.equal(new Set(tools.map((tool) => tool.slug)).size, tools.length);
   assert.deepEqual(
     Object.fromEntries(categories.map((category) => [category.id, category.count])),

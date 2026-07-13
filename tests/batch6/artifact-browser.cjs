@@ -55,7 +55,7 @@ test('built artifact has provenance, correct MIME and all physical/logical route
   await page.reload({ waitUntil:'networkidle0' }); assert.equal(await page.$eval('h1',(element)=>element.textContent),registry.at(-1).name);
   const manifest = await (await fetch(`${origin}/.aztoolbox-build.json`)).json();
   const head = execFileSync('git',['rev-parse','HEAD'],{cwd:process.cwd(),encoding:'utf8'}).trim();
-  assert.equal(manifest.commit,head); assert.equal(manifest.files.length,31); assert.ok(manifest.files.some((entry)=>entry.path==='assets/js/motion.js'));
+  assert.equal(manifest.commit,head); assert.equal(manifest.files.length,32); assert.ok(manifest.files.some((entry)=>entry.path==='assets/js/motion.js')); assert.ok(manifest.files.some((entry)=>entry.path==='assets/js/portfolio-iteration2-tools.js'));
   for (const vendor of ['assets/vendor/pdfjs-6.1.200.min.js','assets/vendor/pdfjs-6.1.200.worker.min.js','assets/vendor/pdfjs-6.1.200.LICENSE.txt']) assert.ok(manifest.files.some((entry)=>entry.path===vendor), vendor);
   const mimeChecks = [['/','text/html'],['/assets/js/app.js','(?:text|application)/javascript'],['/assets/css/app.css','text/css'],['/assets/images/aztoolbox-flow-field-v2.png','image/png']];
   for(const [resource,mime] of mimeChecks){const response=await fetch(`${origin}${resource}`);assert.equal(response.status,200);assert.match(response.headers.get('content-type')||'',new RegExp(mime,'u'));}

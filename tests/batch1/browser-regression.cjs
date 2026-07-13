@@ -568,8 +568,8 @@ test('animated image and over-limit text fail clearly without stale success', as
 
 test('previously passing tools retain representative behavior and direct routes', async () => {
   const cases = [
-    ['line-sorter', async (page) => page.evaluate(() => { document.querySelector('[data-simple-input]').value = 'ş\na\nç'; document.querySelector('[data-simple-run]').click(); return document.querySelector('.output-code').textContent; }), 'a\nç\nş'],
-    ['whitespace-cleaner', async (page) => page.evaluate(() => { document.querySelector('[data-simple-input]').value = '  bir   iki  \n\n üç '; document.querySelector('[data-simple-run]').click(); return document.querySelector('.output-code').textContent; }), 'bir iki\nüç'],
+    ['line-sorter', async (page) => page.evaluate(() => { document.querySelector('[data-cleanup-input]').value = 'ş\na\nç'; document.querySelector('[data-cleanup-preview]').click(); return document.querySelector('[data-cleanup-output]').value; }), 'a\nç\nş'],
+    ['whitespace-cleaner', async (page) => page.evaluate(() => { document.querySelector('[data-cleanup-input]').value = '  bir   iki  \n\n üç '; document.querySelector('[data-cleanup-preview]').click(); return document.querySelector('[data-cleanup-output]').value; }), 'bir iki\nüç'],
     ['url-encoder', async (page) => page.evaluate(() => { document.querySelector('[data-simple-input]').value = 'A B/ə'; document.querySelector('[data-encode]').click(); return document.querySelector('.output-code').textContent; }), encodeURIComponent('A B/ə')],
     ['hash-generator', async (page) => { await page.evaluate(() => { document.querySelector('[data-simple-input]').value = 'abc'; document.querySelector('[data-simple-run]').click(); }); await new Promise((resolve) => setTimeout(resolve, 50)); return page.$eval('.output-code', (element) => element.textContent); }, 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
   ];
@@ -593,7 +593,7 @@ test('all registered tool routes still render directly without page errors', asy
     await page.waitForSelector('h1');
     assert.equal(await page.$eval('h1', (heading) => heading.textContent), tool.name);
   }
-  assert.equal(tools.length, 35);
+  assert.equal(tools.length, 32);
   assert.deepEqual(errors, []);
   await page.close();
 });

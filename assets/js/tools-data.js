@@ -20,7 +20,7 @@ export const categoryMeta = {
   text: { name: 'Mətn alətləri', description: 'Mətni ölç, təmizlə, müqayisə et və hazırla.' },
   developer: { name: 'Developer alətləri', description: 'Data, kod və veb utilitlərini sürətləndir.' },
   business: { name: 'Hesablama alətləri', description: 'Gündəlik faiz, vergi və maliyyə hesablamaları.' },
-  security: { name: 'Təhlükəsizlik', description: 'Güclü parol və təhlükəsiz tokenlər yarat.' },
+  security: { name: 'Təhlükəsizlik', description: 'Güclü parol yarat və parol gücünü yoxla.' },
   az: { name: 'Azərbaycan dili', description: 'Yerli yazı və bank məlumatları üçün utilitlər.' },
 };
 
@@ -40,9 +40,7 @@ const rawTools = [
 
   define('text-counter', 'Söz sayacı', 'Söz, simvol, cümlə və sətir sayını canlı hesabla.', 'text', 'COUNT', 'text', ['söz', 'simvol', 'say'], true),
   define('case-converter', 'Böyük/kiçik hərf', 'Mətni böyük, kiçik və başlıq formatına çevir.', 'text', 'Aa', 'text-case', ['uppercase', 'lowercase', 'hərf'], true),
-  define('line-sorter', 'Sətir sıralayıcı', 'Sətirləri əlifba və ya əks sıra ilə düz.', 'text', 'A↓', 'line-sort', ['sort', 'sıra', 'sətir']),
-  define('duplicate-line-remover', 'Təkrarlanan sətirləri sil', 'Eyni sətirlərin yalnız bir nüsxəsini saxla.', 'text', 'UNIQ', 'line-unique', ['duplicate', 'təkrar', 'unikal']),
-  define('whitespace-cleaner', 'Boşluq təmizləyici', 'Artıq boşluqları və boş sətirləri yığcamlaşdır.', 'text', 'TRIM', 'space-clean', ['space', 'boşluq', 'təmizlə']),
+  define('text-cleanup-workspace', 'Mətn təmizləmə iş sahəsi', 'Sətirləri sırala, təkrarları sil və boşluqları ardıcıl əməliyyatlarla təmizlə.', 'text', 'CLEAN', 'text-cleanup-workspace', ['sort', 'sıra', 'sətir', 'duplicate', 'təkrar', 'unikal', 'space', 'boşluq', 'trim', 'təmizlə'], false, { modes: ['sort', 'deduplicate', 'whitespace'], defaultMode: 'sort' }),
   define('text-compare', 'Mətn müqayisəsi', 'İki mətnin fərqli sətirlərini sadə şəkildə gör.', 'text', 'DIFF', 'text-diff', ['diff', 'compare', 'müqayisə']),
 
   define('json-formatter', 'JSON formatter', 'JSON məlumatını yoxla, formatla və ya minify et.', 'developer', '{}', 'json', ['json', 'format', 'validate'], true),
@@ -50,7 +48,7 @@ const rawTools = [
   define('url-encoder', 'URL kodlayıcı', 'URL mətnini təhlükəsiz kodla və decode et.', 'developer', '%', 'url-codec', ['url', 'encode', 'decode']),
   define('jwt-decoder', 'JWT decoder', 'JWT header və payload hissəsini lokal oxu.', 'developer', 'JWT', 'jwt', ['jwt', 'token', 'decode']),
   define('hash-generator', 'Hash yaradan', 'Mətn üçün SHA-256 və SHA-512 hash yarat.', 'developer', '#', 'hash', ['sha', 'hash', 'crypto']),
-  define('uuid-generator', 'UUID yaradan', 'Bir kliklə standart UUID v4 yarat.', 'developer', 'ID', 'uuid', ['uuid', 'guid', 'id']),
+  define('id-token-studio', 'ID və token studiyası', 'UUID v4 identifikatorları və kriptoqrafik təhlükəsiz tokenlər yarat.', 'developer', 'ID+', 'id-token-studio', ['uuid', 'guid', 'id', 'token', 'random', 'crypto', 'base64url', 'hex'], false, { modes: ['uuid', 'token'], defaultMode: 'uuid' }),
   define('timestamp-converter', 'Timestamp çevirici', 'Unix timestamp və tarixi qarşılıqlı çevir.', 'developer', 'TIME', 'timestamp', ['unix', 'timestamp', 'date']),
   define('regex-tester', 'Regex tester', 'Regular expression nümunəsini mətn üzərində sına.', 'developer', '.*', 'regex', ['regex', 'regexp', 'test']),
 
@@ -62,7 +60,6 @@ const rawTools = [
 
   define('password-generator', 'Parol generatoru', 'Güclü və təsadüfi parolları cihazında yarat.', 'security', 'KEY', 'password', ['parol', 'password', 'generator'], true),
   define('password-strength', 'Parol gücü yoxlayıcı', 'Parolun gücünü və təxmini təhlükəsizlik səviyyəsini ölç.', 'security', 'SAFE', 'password-check', ['parol', 'strength', 'təhlükəsizlik']),
-  define('secure-token-generator', 'Təhlükəsiz token yaradan', 'Kriptoqrafik təsadüfi tokenlər yarat.', 'security', 'TOKEN', 'token', ['token', 'random', 'crypto']),
 
   define('az-iban-validator', 'AZ IBAN yoxlayıcı', 'Azərbaycan IBAN nömrəsinin quruluşunu və checksum-ını yoxla.', 'az', 'IBAN', 'iban', ['iban', 'bank', 'azərbaycan'], true),
   define('az-transliterator', 'Latın/Kiril çevirici', 'Azərbaycan mətnini latın və kiril yazıları arasında çevir.', 'az', 'AZ', 'transliterate', ['latın', 'kiril', 'azərbaycan']),
@@ -88,6 +85,31 @@ const legacyRoutes = Object.freeze([
     id: 'pdf-page-extractor', slug: 'pdf-page-extractor', name: 'PDF səhifə çıxarıcı', lifecycle: 'replaced',
     destination: 'pdf-organizer', mode: 'extract', indexable: false, sitemap: false,
     searchTerms: ['PDF page extractor', 'PDF extract', 'PDF səhifə çıxar', 'seçilmiş səhifələrdən PDF yarat'],
+  },
+  {
+    id: 'line-sorter', slug: 'line-sorter', name: 'Sətir sıralayıcı', lifecycle: 'replaced',
+    destination: 'text-cleanup-workspace', mode: 'sort', indexable: false, sitemap: false,
+    searchTerms: ['Line sorter', 'Sort lines', 'Sətirləri sırala', 'əlifba sırası'],
+  },
+  {
+    id: 'duplicate-line-remover', slug: 'duplicate-line-remover', name: 'Təkrarlanan sətirləri sil', lifecycle: 'replaced',
+    destination: 'text-cleanup-workspace', mode: 'deduplicate', indexable: false, sitemap: false,
+    searchTerms: ['Duplicate line remover', 'Remove duplicate lines', 'Təkrar sətirləri sil', 'unikal sətirlər'],
+  },
+  {
+    id: 'whitespace-cleaner', slug: 'whitespace-cleaner', name: 'Boşluq təmizləyici', lifecycle: 'replaced',
+    destination: 'text-cleanup-workspace', mode: 'whitespace', indexable: false, sitemap: false,
+    searchTerms: ['Whitespace cleaner', 'Clean whitespace', 'Boş sətirləri sil', 'Artıq boşluqları təmizlə'],
+  },
+  {
+    id: 'uuid-generator', slug: 'uuid-generator', name: 'UUID yaradan', lifecycle: 'replaced',
+    destination: 'id-token-studio', mode: 'uuid', indexable: false, sitemap: false,
+    searchTerms: ['UUID generator', 'GUID generator', 'UUID v4 yarat', 'ID yarat'],
+  },
+  {
+    id: 'secure-token-generator', slug: 'secure-token-generator', name: 'Təhlükəsiz token yaradan', lifecycle: 'replaced',
+    destination: 'id-token-studio', mode: 'token', indexable: false, sitemap: false,
+    searchTerms: ['Secure token generator', 'Random token', 'Kriptoqrafik token yarat', 'Base64URL token', 'hex token'],
   },
   {
     id: 'slug-generator', slug: 'slug-generator', name: 'Slug yaradan', lifecycle: 'removed',

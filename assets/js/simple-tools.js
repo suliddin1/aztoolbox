@@ -15,6 +15,12 @@ import {
 } from './batch3-tools.js';
 import { createStoredZip, imageExtension, imageOutputType } from './batch4-tools.js';
 import {
+  createSecureTokenBatch,
+  createUuidBatch,
+  runTextCleanupPipeline,
+  tokenCharacterLength,
+} from './portfolio-iteration2-tools.js';
+import {
   LIMITS,
   ToolInputError,
   formatBytes,
@@ -35,7 +41,7 @@ const actions = (primary, attr, secondary = '') => `<button class="button button
 
 const imageKinds = new Set(['image-compress', 'image-convert', 'image-crop', 'image-rotate', 'image-gray', 'image-clean']);
 const pdfKinds = new Set(['pdf-clean']);
-const transformKinds = new Set(['text-case', 'line-sort', 'line-unique', 'space-clean']);
+const transformKinds = new Set(['text-case']);
 
 const pdfOrganizerModes = Object.freeze({
   split: {
@@ -57,6 +63,21 @@ const PDF_THUMBNAIL_CONCURRENCY = 2;
 const PDF_THUMBNAIL_PIXEL_BUDGET = 8_000_000;
 let pdfThumbnailEnginePromise;
 
+const textCleanupModes = Object.freeze({
+  sort: { label: 'Sırala', operations: ['sort'] },
+  deduplicate: { label: 'Təkrarları sil', operations: ['deduplicate'] },
+  whitespace: { label: 'Boşluğu təmizlə', operations: ['whitespace'] },
+});
+const textOperationLabels = Object.freeze({
+  sort: 'Sətirləri sırala',
+  deduplicate: 'Təkrar sətirləri sil',
+  whitespace: 'Boşluğu təmizlə',
+});
+const studioModes = Object.freeze({
+  uuid: { label: 'UUID v4', action: 'UUID yarat' },
+  token: { label: 'Təhlükəsiz token', action: 'Token yarat' },
+});
+
 function loadPdfThumbnailEngine() {
   if (!pdfThumbnailEnginePromise) {
     const moduleUrl = new URL('../vendor/pdfjs-6.1.200.min.js', import.meta.url);
@@ -69,6 +90,28 @@ function loadPdfThumbnailEngine() {
 }
 
 export function simpleToolWorkspace(tool) {
+  if (tool.kind === 'text-cleanup-workspace') {
+    const mode = textCleanupModes[tool.mode] ? tool.mode : 'sort';
+    const modeLinks = Object.entries(textCleanupModes).map(([value, details]) => `<a class="mode-tab" href="?slug=text-cleanup-workspace&amp;mode=${value}" ${value === mode ? 'aria-current="page"' : ''}>${details.label}</a>`).join('');
+    const operationOptions = Object.entries(textOperationLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+    const body = `<nav class="mode-tabs" aria-label="Mətn təmizləmə presetləri">${modeLinks}</nav>
+      <div class="field"><label for="cleanup-input">Mətn</label><textarea class="textarea" id="cleanup-input" maxlength="${LIMITS.textChars}" data-cleanup-input placeholder="Mətni buraya yazın və ya yapışdırın…"></textarea><span class="field-hint">Mətn URL-ə və yaddaşa yazılmır. Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} simvol.</span></div>
+      <div class="field"><label>Aktiv əməliyyat sırası</label><ol class="operation-list" data-operation-list data-initial-mode="${mode}"></ol></div>
+      <div class="check-row operation-add-row"><div class="field"><label for="add-operation">Əməliyyat əlavə et</label><select class="select" id="add-operation" data-add-operation>${operationOptions}</select></div><button class="button button-secondary" type="button" data-add-operation-button>Əlavə et</button></div>
+      <div class="check-row"><div class="field"><label for="cleanup-newline">Çıxış sətir sonu</label><select class="select" id="cleanup-newline" data-cleanup-newline><option value="lf">LF — köhnə standart</option><option value="crlf">CRLF</option><option value="preserve">Mənbəni qoru (yapışdırma)</option></select></div><div class="field"><label for="sort-direction">Sıralama</label><select class="select" id="sort-direction" data-sort-direction><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div></div>
+      <div class="field"><label>Əməliyyat seçimləri</label><div class="check-row"><label class="check-pill"><input type="checkbox" checked data-dedupe-case-sensitive /> Təkrarlar böyük/kiçik hərfə həssasdır</label><label class="check-pill"><input type="checkbox" checked data-cleanup-trim /> Kənar boşluqları sil</label><label class="check-pill"><input type="checkbox" checked data-cleanup-collapse-spaces /> Təkrar boşluqları yığ</label><label class="check-pill"><input type="checkbox" checked data-cleanup-remove-empty /> Boş sətirləri sil</label></div><span class="field-hint">Hərfə həssas rejim köhnə təkrar-silmə davranışıdır. Boşluq presetində üç boşluq seçimi də aktivdir.</span></div>
+      <p class="privacy-note"><span aria-hidden="true">⌁</span>Giriş və nəticə yalnız bu səhifənin yaddaşında işlənir; URL, localStorage və sessionStorage-a yazılmır.</p>`;
+    const workspaceActions = '<button class="button button-primary" type="button" data-cleanup-preview>Emal et və önizlə</button><button class="button button-secondary" type="button" data-cleanup-undo disabled>Geri al</button><button class="button button-ghost" type="button" data-cleanup-reset>Sıfırla</button>';
+    return `${inputPanel(body, workspaceActions)}${resultPanel()}`;
+  }
+  if (tool.kind === 'id-token-studio') {
+    const mode = studioModes[tool.mode] ? tool.mode : 'uuid';
+    const modeLinks = Object.entries(studioModes).map(([value, details]) => `<a class="mode-tab" href="?slug=id-token-studio&amp;mode=${value}" ${value === mode ? 'aria-current="page"' : ''}>${details.label}</a>`).join('');
+    const tokenControls = mode === 'token' ? `<div class="check-row"><div class="field"><label for="token-bytes">Token uzunluğu (bayt)</label><input class="input" id="token-bytes" type="number" inputmode="numeric" min="8" max="128" value="32" data-token-bytes /><span class="field-hint"><strong data-token-character-length>64</strong> çıxış simvolu</span></div><div class="field"><label for="token-format">Çıxış formatı</label><select class="select" id="token-format" data-token-format><option value="hex">Hexadecimal</option><option value="base64url">Base64URL</option></select></div></div>` : '';
+    const warning = mode === 'token' ? '<p class="privacy-note" role="note"><span aria-hidden="true">!</span>Göstərilən tokenləri açıq söhbətlərdə, ekran görüntülərində və etibarsız kontekstlərdə paylaşmayın və təkrar istifadə etməyin.</p>' : '<p class="privacy-note"><span aria-hidden="true">⌁</span>UUID-lər Web Crypto ilə yaradılır və səhifədən çıxanda silinir.</p>';
+    const body = `<nav class="mode-tabs mode-tabs-two" aria-label="ID və token rejimi">${modeLinks}</nav><div class="field"><label for="studio-count">Say</label><input class="input" id="studio-count" type="number" inputmode="numeric" min="1" max="50" value="${mode === 'uuid' ? 5 : 1}" data-studio-count /><span class="field-hint">1-50 nəticə. Kəsr və sərhəddən kənar dəyərlər qəbul edilmir.</span></div>${tokenControls}${warning}`;
+    return `${inputPanel(body, `<button class="button button-primary" type="button" data-studio-generate>${studioModes[mode].action}</button><button class="button button-ghost" type="button" data-studio-reset>Sıfırla</button>`)}${resultPanel()}`;
+  }
   if (tool.kind === 'pdf-organizer') {
     const mode = pdfOrganizerModes[tool.mode] ? tool.mode : 'split';
     const current = pdfOrganizerModes[mode];
@@ -97,14 +140,13 @@ export function simpleToolWorkspace(tool) {
     return `${inputPanel(`${upload('image/png,image/jpeg,image/webp', false, 'Şəkli seçin', 'PNG, JPG və WebP', 'data-simple-file')}${options}<p class="privacy-note"><span aria-hidden="true">⌁</span>${formatNote} Animasiyalı girişlər rədd edilir.</p>`, actions('Şəkli hazırla', 'data-simple-run'))}${resultPanel()}`;
   }
   if (transformKinds.has(tool.kind)) {
-    const options = tool.kind === 'text-case' ? '<div class="field"><label>Çevirmə</label><select class="select" data-mode><option value="upper">BÖYÜK HƏRF</option><option value="lower">kiçik hərf</option><option value="title">Başlıq Forması</option><option value="sentence">Cümlə forması</option></select></div>' : tool.kind === 'line-sort' ? '<div class="field"><label>Sıra</label><select class="select" data-mode><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' : '';
+    const options = '<div class="field"><label>Çevirmə</label><select class="select" data-mode><option value="upper">BÖYÜK HƏRF</option><option value="lower">kiçik hərf</option><option value="title">Başlıq Forması</option><option value="sentence">Cümlə forması</option></select></div>';
     return `${inputPanel(`${textArea()}${options}`, actions('Emal et', 'data-simple-run'))}${resultPanel()}`;
   }
   if (tool.kind === 'text-diff') return `${inputPanel(`${textArea('Birinci mətn', 'data-left')}${textArea('İkinci mətn', 'data-right')}`, actions('Müqayisə et', 'data-simple-run'))}${resultPanel()}`;
   if (['base64','url-codec'].includes(tool.kind)) return `${inputPanel(textArea(), actions('Kodla', 'data-encode', '<button class="button button-secondary" type="button" data-decode>Geri aç</button>'))}${resultPanel()}`;
   if (tool.kind === 'jwt') return `${inputPanel(`${textArea('JWT token', 'data-simple-input', 'eyJ...')}<p class="privacy-note" role="note"><span aria-hidden="true">!</span>Bu alət tokeni yalnız oxuyur. İmza, bitmə tarixi və etibarlılıq yoxlanmır.</p>`, actions('Tokeni oxu', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'hash') return `${inputPanel(`${textArea()}<div class="field"><label>Alqoritm</label><select class="select" data-algorithm><option>SHA-256</option><option>SHA-512</option></select></div>`, actions('Hash yarat', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'uuid') return `${inputPanel('<div class="field"><label>Say</label><input class="input" type="number" min="1" max="50" value="5" data-count /></div>', actions('UUID yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'timestamp') return `${inputPanel('<div class="field"><label>Timestamp vahidi</label><select class="select" data-timestamp-unit><option value="seconds">Saniyə</option><option value="milliseconds">Millisaniyə</option></select></div><div class="field"><label>Unix timestamp</label><input class="input" inputmode="decimal" data-timestamp placeholder="1710000000" /></div><div class="field"><label>Tarix və saat</label><input class="input" type="datetime-local" step="1" data-date /><span class="field-hint">Tarix və saat cihazınızın yerli vaxt qurşağında şərh olunur.</span></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'regex') return `${inputPanel('<div class="check-row"><div class="field"><label>Pattern</label><input class="input code" data-pattern placeholder="\\b[A-Z]+\\b" /></div><div class="field"><label>Flag</label><input class="input code" data-flags value="gi" /></div></div>'+textArea('Test mətni'), actions('Sına', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'percentage') return `${inputPanel('<div class="field"><label>Hesablama rejimi</label><select class="select" data-percentage-mode><option value="part">Ədədin faizi</option><option value="change">Faiz dəyişimi</option></select></div><div class="check-row"><div class="field"><label><span data-a-label>Ədəd</span></label><input class="input" inputmode="decimal" data-a /></div><div class="field"><label><span data-b-label>Faiz</span></label><input class="input" inputmode="decimal" data-b /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
@@ -112,7 +154,6 @@ export function simpleToolWorkspace(tool) {
   if (tool.kind === 'unit') return `${inputPanel('<div class="field"><label>Dəyər</label><input class="input" inputmode="decimal" data-a /></div><div class="check-row"><div class="field"><label>Buradan</label><select class="select" data-from><option value="m">metr</option><option value="km">kilometr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div><div class="field"><label>Buraya</label><select class="select" data-to><option value="km">kilometr</option><option value="m">metr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'loan') return `${inputPanel('<div class="field"><label>Kredit məbləği</label><input class="input" inputmode="decimal" data-a /></div><div class="check-row"><div class="field"><label>İllik faiz</label><input class="input" inputmode="decimal" data-b /></div><div class="field"><label>Müddət (ay)</label><input class="input" inputmode="numeric" data-c /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'password-check') return `${inputPanel(`<div class="field"><label>Parol</label><input class="input" type="password" autocomplete="off" maxlength="${LIMITS.textChars}" data-simple-input /><span class="field-hint">Yoxlama lokaldır; parol cihazınızdan kənara göndərilmir.</span></div>`, actions('Gücünü yoxla', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'token') return `${inputPanel('<div class="field"><label>Uzunluq (bayt)</label><input class="input" type="number" min="8" max="128" value="32" data-count /></div>', actions('Token yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'iban') return `${inputPanel('<div class="field"><label>AZ IBAN</label><input class="input code" data-simple-input placeholder="AZ00 XXXX ..." /></div>', actions('IBAN-ı yoxla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'transliterate') return `${inputPanel(`${textArea('Azərbaycan mətni')}<div class="field"><label>İstiqamət</label><select class="select" data-mode><option value="latin-cyr">Latın → Kiril</option><option value="cyr-latin">Kiril → Latın</option></select></div>`, actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
   return null;
@@ -223,6 +264,158 @@ export function initSimpleTool(tool, ctx) {
     }, true);
   });
 
+  if (tool.kind === 'text-cleanup-workspace') {
+    const mode = textCleanupModes[tool.mode] ? tool.mode : 'sort';
+    const input = root.querySelector('[data-cleanup-input]');
+    const operationList = root.querySelector('[data-operation-list]');
+    const addSelect = root.querySelector('[data-add-operation]');
+    const addButton = root.querySelector('[data-add-operation-button]');
+    const newline = root.querySelector('[data-cleanup-newline]');
+    const sortDirection = root.querySelector('[data-sort-direction]');
+    const caseSensitive = root.querySelector('[data-dedupe-case-sensitive]');
+    const trim = root.querySelector('[data-cleanup-trim]');
+    const collapseSpaces = root.querySelector('[data-cleanup-collapse-spaces]');
+    const removeEmpty = root.querySelector('[data-cleanup-remove-empty]');
+    const preview = root.querySelector('[data-cleanup-preview]');
+    const undo = root.querySelector('[data-cleanup-undo]');
+    const resetCleanup = root.querySelector('[data-cleanup-reset]');
+    let operations = [...textCleanupModes[mode].operations];
+    let outputValue = null;
+    let undoValue = null;
+    let preservedInputNewline = 'lf';
+    let undoNewline = 'lf';
+
+    const invalidateOutput = () => { outputValue = null; ctx.clearResult(); };
+    const renderOperations = () => {
+      operationList.innerHTML = operations.map((operation, index) => `<li class="operation-item" data-cleanup-operation="${operation}"><span><b>${index + 1}</b><strong>${textOperationLabels[operation]}</strong></span><span class="operation-actions"><button class="icon-button" type="button" data-operation-up aria-label="${textOperationLabels[operation]} əməliyyatını yuxarı daşı" ${index === 0 ? 'disabled' : ''}>↑</button><button class="icon-button" type="button" data-operation-down aria-label="${textOperationLabels[operation]} əməliyyatını aşağı daşı" ${index === operations.length - 1 ? 'disabled' : ''}>↓</button><button class="icon-button" type="button" data-operation-remove aria-label="${textOperationLabels[operation]} əməliyyatını sil" ${operations.length === 1 ? 'disabled' : ''}>×</button></span></li>`).join('');
+      [...addSelect.options].forEach((option) => { option.disabled = operations.includes(option.value); });
+      const next = [...addSelect.options].find((option) => !option.disabled);
+      if (next) addSelect.value = next.value;
+      addButton.disabled = !next;
+    };
+    const cleanupOptions = () => ({
+      newline: newline.value === 'preserve' ? preservedInputNewline : newline.value,
+      sortDirection: sortDirection.value,
+      caseSensitive: caseSensitive.checked,
+      trim: trim.checked,
+      collapseSpaces: collapseSpaces.checked,
+      removeEmpty: removeEmpty.checked,
+    });
+    const renderResult = (result) => {
+      const before = result.stats.before; const after = result.stats.after;
+      ctx.showResult(`<div class="cleanup-comparison"><section><h3 id="cleanup-before-heading">Əvvəl</h3><div class="cleanup-stats"><span><b data-before-lines>${before.lineCount}</b> sətir</span><span><b data-before-nonempty>${before.nonEmptyLineCount}</b> dolu</span><span><b data-before-chars>${before.characterCount}</b> simvol</span></div><pre class="cleanup-preview" data-cleanup-before tabindex="0" role="region" aria-labelledby="cleanup-before-heading">${ctx.escapeHtml(input.value)}</pre></section><section><h3 id="cleanup-after-heading">Sonra</h3><div class="cleanup-stats"><span><b data-after-lines>${after.lineCount}</b> sətir</span><span><b data-after-nonempty>${after.nonEmptyLineCount}</b> dolu</span><span><b data-after-chars>${after.characterCount}</b> simvol</span></div><textarea class="textarea cleanup-output" readonly data-cleanup-output aria-labelledby="cleanup-after-heading">${ctx.escapeHtml(result.output)}</textarea></section></div><p class="field-hint"><strong data-removed-duplicates>${result.stats.removedDuplicates}</strong> təkrar sətir silindi · çıxış ${result.newline.toUpperCase()}</p><div class="workspace-actions"><button class="button button-secondary" type="button" data-cleanup-copy>Kopyala</button><button class="button button-secondary" type="button" data-cleanup-download>TXT endir</button><button class="button button-primary" type="button" data-cleanup-apply>Nəticəni girişə keçir</button></div>`, 'success');
+      root.querySelector('[data-cleanup-copy]').onclick = (event) => ctx.copyText(outputValue ?? '', event.currentTarget);
+      root.querySelector('[data-cleanup-download]').onclick = () => ctx.downloadBlob(new Blob([outputValue ?? ''], { type: 'text/plain;charset=utf-8' }), 'aztoolbox-temizlenmis-metn.txt');
+      root.querySelector('[data-cleanup-apply]').onclick = () => {
+        if (outputValue == null) return;
+        undoValue = input.value;
+        undoNewline = preservedInputNewline;
+        if (outputValue.includes('\r\n')) preservedInputNewline = 'crlf';
+        else if (/[\r\n]/u.test(outputValue)) preservedInputNewline = 'lf';
+        input.value = outputValue;
+        outputValue = null;
+        undo.disabled = false;
+        ctx.clearResult();
+        input.focus();
+      };
+    };
+    operationList.addEventListener('click', (event) => {
+      const item = event.target.closest('[data-cleanup-operation]');
+      if (!item) return;
+      const index = [...operationList.children].indexOf(item);
+      if (event.target.closest('[data-operation-up]') && index > 0) [operations[index - 1], operations[index]] = [operations[index], operations[index - 1]];
+      else if (event.target.closest('[data-operation-down]') && index < operations.length - 1) [operations[index + 1], operations[index]] = [operations[index], operations[index + 1]];
+      else if (event.target.closest('[data-operation-remove]') && operations.length > 1) operations.splice(index, 1);
+      else return;
+      invalidateOutput(); renderOperations();
+    });
+    addButton.onclick = () => {
+      if (!textOperationLabels[addSelect.value] || operations.includes(addSelect.value)) return;
+      operations.push(addSelect.value); invalidateOutput(); renderOperations();
+    };
+    const rememberInputNewline = (value) => {
+      if (typeof value !== 'string' || !/[\r\n]/u.test(value)) return;
+      preservedInputNewline = value.includes('\r\n') ? 'crlf' : 'lf';
+    };
+    input.addEventListener('paste', (event) => rememberInputNewline(event.clipboardData?.getData('text/plain')));
+    input.addEventListener('drop', (event) => rememberInputNewline(event.dataTransfer?.getData('text/plain')));
+    [input, newline, sortDirection, caseSensitive, trim, collapseSpaces, removeEmpty].forEach((control) => {
+      control.addEventListener(control === input ? 'input' : 'change', invalidateOutput);
+    });
+    preview.onclick = () => {
+      ctx.clearResult(); outputValue = null;
+      try {
+        const result = runTextCleanupPipeline(input.value, operations, cleanupOptions());
+        outputValue = result.output;
+        renderResult(result);
+      } catch (error) { ctx.showResult('', userMessage(error, 'Mətn emal edilə bilmədi.')); }
+    };
+    undo.onclick = () => {
+      if (undoValue == null) return;
+      input.value = undoValue; preservedInputNewline = undoNewline; undoValue = null; undo.disabled = true; outputValue = null; ctx.clearResult(); input.focus();
+    };
+    resetCleanup.onclick = () => {
+      input.value = ''; operations = [...textCleanupModes[mode].operations]; newline.value = 'lf'; sortDirection.value = 'asc';
+      caseSensitive.checked = true; trim.checked = true; collapseSpaces.checked = true; removeEmpty.checked = true;
+      outputValue = null; undoValue = null; preservedInputNewline = 'lf'; undoNewline = 'lf'; undo.disabled = true; ctx.clearResult(); renderOperations(); input.focus();
+    };
+    renderOperations();
+    return true;
+  }
+
+  if (tool.kind === 'id-token-studio') {
+    const mode = studioModes[tool.mode] ? tool.mode : 'uuid';
+    const count = root.querySelector('[data-studio-count]');
+    const tokenBytes = root.querySelector('[data-token-bytes]');
+    const tokenFormat = root.querySelector('[data-token-format]');
+    const characterLength = root.querySelector('[data-token-character-length]');
+    const generate = root.querySelector('[data-studio-generate]');
+    const resetStudio = root.querySelector('[data-studio-reset]');
+    let values = [];
+
+    const clearFieldErrors = () => [count, tokenBytes].filter(Boolean).forEach((control) => control.removeAttribute('aria-invalid'));
+    const invalidateValues = () => { values = []; clearFieldErrors(); ctx.clearResult(); };
+    const updateCharacterLength = () => {
+      if (!characterLength) return;
+      try { characterLength.textContent = String(tokenCharacterLength(tokenBytes.value, tokenFormat.value)); }
+      catch { characterLength.textContent = '—'; }
+    };
+    const renderValues = (details) => {
+      const resultType = mode === 'uuid' ? 'UUID' : 'Token';
+      const items = values.map((value, index) => `<li data-studio-item><code>${ctx.escapeHtml(value)}</code><button class="button button-secondary" type="button" data-studio-copy-one="${index}" aria-label="${resultType} ${index + 1} nəticəsini kopyala">Kopyala</button></li>`).join('');
+      ctx.showResult(`<p>${details}</p><ol class="studio-output" data-studio-output>${items}</ol><div class="workspace-actions"><button class="button button-secondary" type="button" data-studio-copy-all>Hamısını kopyala</button><button class="button button-primary" type="button" data-studio-download>TXT endir</button></div>`, 'success');
+      root.querySelectorAll('[data-studio-copy-one]').forEach((button) => { button.onclick = (event) => ctx.copyText(values[Number(button.dataset.studioCopyOne)], event.currentTarget); });
+      root.querySelector('[data-studio-copy-all]').onclick = (event) => ctx.copyText(values.join('\n'), event.currentTarget);
+      root.querySelector('[data-studio-download]').onclick = () => ctx.downloadBlob(new Blob([values.join('\n')], { type: 'text/plain;charset=utf-8' }), mode === 'uuid' ? 'uuid-v4.txt' : 'tehlukesiz-tokenler.txt');
+    };
+    [count, tokenBytes, tokenFormat].filter(Boolean).forEach((control) => {
+      control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', () => { invalidateValues(); updateCharacterLength(); });
+    });
+    generate.onclick = () => {
+      invalidateValues();
+      try {
+        values = mode === 'uuid' ? createUuidBatch(count.value) : createSecureTokenBatch(count.value, tokenBytes.value, tokenFormat.value);
+        const details = mode === 'uuid' ? `${values.length} UUID v4 yaradıldı.` : `${values.length} token yaradıldı · hər biri ${tokenBytes.value} bayt və ${tokenCharacterLength(tokenBytes.value, tokenFormat.value)} simvol.`;
+        renderValues(details);
+      } catch (error) {
+        const message = userMessage(error, 'Təhlükəsiz nəticə yaradıla bilmədi.');
+        if (/say/u.test(message)) count.setAttribute('aria-invalid', 'true');
+        else tokenBytes?.setAttribute('aria-invalid', 'true');
+        ctx.showResult('', message);
+      }
+    };
+    resetStudio.onclick = () => {
+      values = []; count.value = mode === 'uuid' ? '5' : '1';
+      if (tokenBytes) tokenBytes.value = '32'; if (tokenFormat) tokenFormat.value = 'hex';
+      clearFieldErrors(); updateCharacterLength(); ctx.clearResult(); count.focus();
+    };
+    const clearSensitive = () => { values = []; ctx.clearResult(); };
+    addEventListener('pagehide', clearSensitive);
+    addEventListener('pageshow', (event) => { if (event.persisted) clearSensitive(); });
+    updateCharacterLength();
+    return true;
+  }
+
   if (tool.kind === 'pdf-organizer') {
     const mode = pdfOrganizerModes[tool.mode] ? tool.mode : 'split';
     const pageInput = root.querySelector('[data-page-list]');
@@ -291,6 +484,14 @@ export function initSimpleTool(tool, ctx) {
     const renderPages = () => {
       pageGrid.innerHTML = Array.from({ length: pageCount }, (_, index) => `<label class="pdf-page-card"><input type="checkbox" data-page-index="${index}" /><span class="pdf-page-sheet" aria-hidden="true"><b>${index + 1}</b><canvas data-page-thumbnail="${index}" hidden></canvas></span><span>Səhifə ${index + 1}</span></label>`).join('');
     };
+    const destroyThumbnailResource = (resource) => {
+      if (typeof resource?.destroy !== 'function') return false;
+      try {
+        const pending = resource.destroy();
+        if (typeof pending?.catch === 'function') void pending.catch(() => {});
+      } catch {}
+      return true;
+    };
     const stopThumbnails = () => {
       thumbnailGeneration += 1;
       thumbnailRenderTasks.forEach((task) => { try { task.cancel(); } catch {} });
@@ -298,8 +499,7 @@ export function initSimpleTool(tool, ctx) {
       const loadingTask = thumbnailLoadingTask;
       const document = thumbnailDocument;
       thumbnailLoadingTask = null; thumbnailDocument = null;
-      if (document) void document.destroy().catch(() => {});
-      else if (loadingTask) void loadingTask.destroy().catch(() => {});
+      if (!destroyThumbnailResource(document)) destroyThumbnailResource(loadingTask);
     };
     const renderThumbnails = async (bytes) => {
       const generation = thumbnailGeneration;
@@ -312,7 +512,10 @@ export function initSimpleTool(tool, ctx) {
         const loadingTask = engine.getDocument({ data: new Uint8Array(bytes.slice(0)), useWasm: false });
         thumbnailLoadingTask = loadingTask;
         const document = await loadingTask.promise;
-        if (generation !== thumbnailGeneration) { await document.destroy(); return; }
+        if (generation !== thumbnailGeneration) {
+          if (!destroyThumbnailResource(document)) destroyThumbnailResource(loadingTask);
+          return;
+        }
         thumbnailDocument = document;
         if (document.numPages !== pageCount) throw new ToolInputError('PDF səhifə önizləməsi uyğun gəlmədi.');
         const limit = Math.min(pageCount, PDF_THUMBNAIL_LIMIT);
@@ -585,16 +788,12 @@ export function initSimpleTool(tool, ctx) {
   if (transformKinds.has(tool.kind)) run.onclick = () => {
     const input = root.querySelector('[data-simple-input]').value; let output = input;
     if (tool.kind === 'text-case') { const mode=root.querySelector('[data-mode]').value; output = mode==='upper'?input.toLocaleUpperCase('az'):mode==='lower'?input.toLocaleLowerCase('az'):mode==='title'?input.toLocaleLowerCase('az').replace(/(^|\s)\S/gu,(m)=>m.toLocaleUpperCase('az')):input.toLocaleLowerCase('az').replace(/(^\s*|[.!?]\s+)\S/gu,(m)=>m.toLocaleUpperCase('az')); }
-    if (tool.kind === 'line-sort') output = input.split(/\r?\n/u).sort((a,b)=>a.localeCompare(b,'az')*(root.querySelector('[data-mode]').value==='desc'?-1:1)).join('\n');
-    if (tool.kind === 'line-unique') output = [...new Set(input.split(/\r?\n/u))].join('\n');
-    if (tool.kind === 'space-clean') output = input.split(/\r?\n/u).map((line)=>line.trim().replace(/\s+/gu,' ')).filter(Boolean).join('\n');
     resultText(ctx, output);
   };
   else if (tool.kind === 'text-diff') run.onclick = () => { const left=root.querySelector('[data-left]').value.split(/\r?\n/u), right=root.querySelector('[data-right]').value.split(/\r?\n/u); const out=[]; const max=Math.max(left.length,right.length); for(let i=0;i<max;i+=1){if(left[i]===right[i]) out.push(`  ${left[i]??''}`); else { if(left[i]!=null) out.push(`− ${left[i]}`); if(right[i]!=null) out.push(`+ ${right[i]}`); }} resultText(ctx,out.join('\n'),'Fərq'); };
   else if (['base64','url-codec'].includes(tool.kind)) { const input=()=>root.querySelector('[data-simple-input]').value; root.querySelector('[data-encode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?btoa(unescape(encodeURIComponent(input()))):encodeURIComponent(input()));}catch{ctx.showResult('','Mətn kodlana bilmədi.');}}; root.querySelector('[data-decode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?decodeURIComponent(escape(atob(input()))):decodeURIComponent(input()));}catch{ctx.showResult('','Məlumat geri açıla bilmədi.');}}; }
   else if (tool.kind === 'jwt') run.onclick = () => { try { const parts=root.querySelector('[data-simple-input]').value.split('.'); const decode=(p)=>JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/gu,'+').replace(/_/gu,'/'))))); resultText(ctx,JSON.stringify({header:decode(parts[0]),payload:decode(parts[1])},null,2)); } catch { ctx.showResult('','JWT formatı düzgün deyil.'); } };
   else if (tool.kind === 'hash') run.onclick = async () => { const operation = ctx.beginOperation(); const bytes=new TextEncoder().encode(root.querySelector('[data-simple-input]').value); const hash=await crypto.subtle.digest(root.querySelector('[data-algorithm]').value,bytes); if (!ctx.isCurrent(operation)) return; resultText(ctx,[...new Uint8Array(hash)].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
-  else if (tool.kind === 'uuid') run.onclick = () => resultText(ctx,Array.from({length:Math.min(50,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>crypto.randomUUID()).join('\n'));
   else if (tool.kind === 'timestamp') run.onclick = () => {
     ctx.clearResult();
     try {
@@ -676,7 +875,6 @@ export function initSimpleTool(tool, ctx) {
     if (assessment.empty) { ctx.clearResult(); ctx.showResult('', 'Parolu daxil edin.'); return; }
     resultText(ctx, `Qiymətləndirmə: ${assessment.summary} — ${assessment.score}/4\nSəbəb: ${assessment.reasons.join(' ')}\nTövsiyə: ${assessment.suggestions.join(' ')}\nQeyd: Bu yalnız lokal təxmini qiymətləndirmədir və real təhlükəsizliyə zəmanət vermir.`);
   };
-  else if (tool.kind === 'token') run.onclick = () => { const bytes=crypto.getRandomValues(new Uint8Array(Math.min(128,Math.max(8,Number(root.querySelector('[data-count]').value)||32)))); resultText(ctx,[...bytes].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
   else if (tool.kind === 'iban') run.onclick = () => {
     const result = validateAzIban(root.querySelector('[data-simple-input]').value);
     const errors = {
