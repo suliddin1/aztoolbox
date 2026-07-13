@@ -5,6 +5,15 @@ import {
   validateAzIban,
 } from './batch2-tools.js';
 import {
+  calculateLoan,
+  calculatePercentage,
+  calculateVat,
+  convertLength,
+  dateToTimestamp,
+  runRegexSafely,
+  timestampToDate,
+} from './batch3-tools.js';
+import {
   LIMITS,
   ToolInputError,
   formatBytes,
@@ -52,12 +61,12 @@ export function simpleToolWorkspace(tool) {
   if (tool.kind === 'jwt') return `${inputPanel(textArea('JWT token', 'data-simple-input', 'eyJ...'), actions('Tokeni oxu', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'hash') return `${inputPanel(`${textArea()}<div class="field"><label>Alqoritm</label><select class="select" data-algorithm><option>SHA-256</option><option>SHA-512</option></select></div>`, actions('Hash yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'uuid') return `${inputPanel('<div class="field"><label>Say</label><input class="input" type="number" min="1" max="50" value="5" data-count /></div>', actions('UUID yarat', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'timestamp') return `${inputPanel('<div class="field"><label>Unix timestamp</label><input class="input" data-timestamp placeholder="1710000000" /></div><div class="field"><label>Tarix və saat</label><input class="input" type="datetime-local" data-date /></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'timestamp') return `${inputPanel('<div class="field"><label>Timestamp vahidi</label><select class="select" data-timestamp-unit><option value="seconds">Saniyə</option><option value="milliseconds">Millisaniyə</option></select></div><div class="field"><label>Unix timestamp</label><input class="input" inputmode="decimal" data-timestamp placeholder="1710000000" /></div><div class="field"><label>Tarix və saat</label><input class="input" type="datetime-local" step="1" data-date /><span class="field-hint">Tarix və saat cihazınızın yerli vaxt qurşağında şərh olunur.</span></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'regex') return `${inputPanel('<div class="check-row"><div class="field"><label>Pattern</label><input class="input code" data-pattern placeholder="\\b[A-Z]+\\b" /></div><div class="field"><label>Flag</label><input class="input code" data-flags value="gi" /></div></div>'+textArea('Test mətni'), actions('Sına', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'percentage') return `${inputPanel('<div class="check-row"><div class="field"><label>Ədəd</label><input class="input" type="number" data-a /></div><div class="field"><label>Faiz</label><input class="input" type="number" data-b /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'vat') return `${inputPanel('<div class="check-row"><div class="field"><label>Məbləğ</label><input class="input" type="number" data-a /></div><div class="field"><label>ƏDV faizi</label><input class="input" type="number" value="18" data-b /></div></div><div class="field"><label>Hesablama</label><select class="select" data-mode><option value="add">ƏDV əlavə et</option><option value="extract">Məbləğin içindən ƏDV-ni ayır</option></select></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'unit') return `${inputPanel('<div class="field"><label>Dəyər</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>Buradan</label><select class="select" data-from><option value="m">metr</option><option value="km">kilometr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div><div class="field"><label>Buraya</label><select class="select" data-to><option value="km">kilometr</option><option value="m">metr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
-  if (tool.kind === 'loan') return `${inputPanel('<div class="field"><label>Kredit məbləği</label><input class="input" type="number" data-a /></div><div class="check-row"><div class="field"><label>İllik faiz</label><input class="input" type="number" data-b /></div><div class="field"><label>Müddət (ay)</label><input class="input" type="number" data-c /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'percentage') return `${inputPanel('<div class="field"><label>Hesablama rejimi</label><select class="select" data-percentage-mode><option value="part">Ədədin faizi</option><option value="change">Faiz dəyişimi</option></select></div><div class="check-row"><div class="field"><label><span data-a-label>Ədəd</span></label><input class="input" inputmode="decimal" data-a /></div><div class="field"><label><span data-b-label>Faiz</span></label><input class="input" inputmode="decimal" data-b /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'vat') return `${inputPanel('<div class="check-row"><div class="field"><label>Məbləğ</label><input class="input" inputmode="decimal" data-a /></div><div class="field"><label>ƏDV faizi</label><input class="input" inputmode="decimal" value="18" data-b /></div></div><div class="field"><label>Hesablama</label><select class="select" data-mode><option value="add">ƏDV əlavə et</option><option value="extract">Məbləğin içindən ƏDV-ni ayır</option></select></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'unit') return `${inputPanel('<div class="field"><label>Dəyər</label><input class="input" inputmode="decimal" data-a /></div><div class="check-row"><div class="field"><label>Buradan</label><select class="select" data-from><option value="m">metr</option><option value="km">kilometr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div><div class="field"><label>Buraya</label><select class="select" data-to><option value="km">kilometr</option><option value="m">metr</option><option value="cm">santimetr</option><option value="ft">fut</option><option value="in">düym</option></select></div></div>', actions('Çevir', 'data-simple-run'))}${resultPanel()}`;
+  if (tool.kind === 'loan') return `${inputPanel('<div class="field"><label>Kredit məbləği</label><input class="input" inputmode="decimal" data-a /></div><div class="check-row"><div class="field"><label>İllik faiz</label><input class="input" inputmode="decimal" data-b /></div><div class="field"><label>Müddət (ay)</label><input class="input" inputmode="numeric" data-c /></div></div>', actions('Hesabla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'password-check') return `${inputPanel(`<div class="field"><label>Parol</label><input class="input" type="password" autocomplete="off" maxlength="${LIMITS.textChars}" data-simple-input /><span class="field-hint">Yoxlama lokaldır; parol cihazınızdan kənara göndərilmir.</span></div>`, actions('Gücünü yoxla', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'token') return `${inputPanel('<div class="field"><label>Uzunluq (bayt)</label><input class="input" type="number" min="8" max="128" value="32" data-count /></div>', actions('Token yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'iban') return `${inputPanel('<div class="field"><label>AZ IBAN</label><input class="input code" data-simple-input placeholder="AZ00 XXXX ..." /></div>', actions('IBAN-ı yoxla', 'data-simple-run'))}${resultPanel()}`;
@@ -135,6 +144,8 @@ async function rasterizeImageForPdf(file, sourceInfo) {
 }
 
 const userMessage = (error, fallback) => error instanceof ToolInputError ? error.message : fallback;
+const formatNumber = (value, maximumFractionDigits = 12) => value.toLocaleString('az-AZ', { maximumFractionDigits });
+const formatMoney = (value) => value.toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function initSimpleTool(tool, ctx) {
   if (!simpleToolWorkspace(tool)) return false;
@@ -306,12 +317,81 @@ export function initSimpleTool(tool, ctx) {
   else if (tool.kind === 'jwt') run.onclick = () => { try { const parts=root.querySelector('[data-simple-input]').value.split('.'); const decode=(p)=>JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/gu,'+').replace(/_/gu,'/'))))); resultText(ctx,JSON.stringify({header:decode(parts[0]),payload:decode(parts[1])},null,2)); } catch { ctx.showResult('','JWT formatı düzgün deyil.'); } };
   else if (tool.kind === 'hash') run.onclick = async () => { const bytes=new TextEncoder().encode(root.querySelector('[data-simple-input]').value); const hash=await crypto.subtle.digest(root.querySelector('[data-algorithm]').value,bytes); resultText(ctx,[...new Uint8Array(hash)].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
   else if (tool.kind === 'uuid') run.onclick = () => resultText(ctx,Array.from({length:Math.min(50,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>crypto.randomUUID()).join('\n'));
-  else if (tool.kind === 'timestamp') run.onclick = () => { const stamp=root.querySelector('[data-timestamp]').value.trim(), date=root.querySelector('[data-date]').value; if(stamp) resultText(ctx,new Date(Number(stamp)*(stamp.length<=10?1000:1)).toLocaleString('az-AZ')); else if(date) resultText(ctx,String(Math.floor(new Date(date).getTime()/1000))); else resultText(ctx,String(Math.floor(Date.now()/1000)),'Cari timestamp'); };
-  else if (tool.kind === 'regex') run.onclick = () => { try { const regex=new RegExp(root.querySelector('[data-pattern]').value,root.querySelector('[data-flags]').value); const matches=[...root.querySelector('[data-simple-input]').value.matchAll(regex)].map((m,index)=>`${index+1}. ${m[0]} — indeks ${m.index}`); resultText(ctx,matches.join('\n')||'Uyğunluq tapılmadı.'); } catch { ctx.showResult('','Regex sintaksisini yoxlayın.'); } };
-  else if (tool.kind === 'percentage') run.onclick = () => { const a=Number(root.querySelector('[data-a]').value), b=Number(root.querySelector('[data-b]').value); resultText(ctx,`${b}% × ${a} = ${(a*b/100).toLocaleString('az-AZ')}`); };
-  else if (tool.kind === 'vat') run.onclick = () => { const a=Number(root.querySelector('[data-a]').value), b=Number(root.querySelector('[data-b]').value)/100, mode=root.querySelector('[data-mode]').value; const vat=mode==='add'?a*b:a-a/(1+b), total=mode==='add'?a+vat:a; resultText(ctx,`ƏDV: ${vat.toFixed(2)} ₼\nYekun: ${total.toFixed(2)} ₼`); };
-  else if (tool.kind === 'unit') run.onclick = () => { const factors={m:1,km:1000,cm:.01,ft:.3048,in:.0254}; const value=Number(root.querySelector('[data-a]').value)*factors[root.querySelector('[data-from]').value]/factors[root.querySelector('[data-to]').value]; resultText(ctx,value.toLocaleString('az-AZ',{maximumFractionDigits:8})); };
-  else if (tool.kind === 'loan') run.onclick = () => { const principal=Number(root.querySelector('[data-a]').value), rate=Number(root.querySelector('[data-b]').value)/1200, months=Number(root.querySelector('[data-c]').value); const payment=rate?principal*rate*Math.pow(1+rate,months)/(Math.pow(1+rate,months)-1):principal/months; resultText(ctx,`Aylıq ödəniş: ${payment.toFixed(2)} ₼\nÜmumi ödəniş: ${(payment*months).toFixed(2)} ₼\nFaiz məbləği: ${(payment*months-principal).toFixed(2)} ₼`); };
+  else if (tool.kind === 'timestamp') run.onclick = () => {
+    ctx.clearResult();
+    try {
+      const stamp = root.querySelector('[data-timestamp]').value.trim();
+      const dateValue = root.querySelector('[data-date]').value;
+      const unit = root.querySelector('[data-timestamp-unit]').value;
+      if (stamp && dateValue) throw new ToolInputError('Timestamp və tarixdən yalnız birini daxil edin.');
+      if (!stamp && !dateValue) throw new ToolInputError('Timestamp və ya tarix daxil edin.');
+      if (stamp) {
+        const date = timestampToDate(stamp, unit);
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'yerli vaxt';
+        resultText(ctx, `UTC: ${date.toISOString()}\nYerli vaxt (${timezone}): ${date.toLocaleString('az-AZ', { dateStyle: 'medium', timeStyle: 'long' })}`);
+      } else {
+        const value = dateToTimestamp(dateValue, unit);
+        const label = unit === 'seconds' ? 'Saniyə' : 'Millisaniyə';
+        resultText(ctx, `${label}: ${formatNumber(value, 3)}\nQeyd: daxil edilən tarix cihazın yerli vaxt qurşağında şərh edildi.`);
+      }
+    } catch (error) { ctx.showResult('', userMessage(error, 'Timestamp çevrilə bilmədi.')); }
+  };
+  else if (tool.kind === 'regex') run.onclick = async () => {
+    ctx.clearResult();
+    const status = root.querySelector('[data-processing-status]');
+    setBusy(run, status, 'Regex yoxlanılır…');
+    try {
+      const pattern = root.querySelector('[data-pattern]').value;
+      const flags = root.querySelector('[data-flags]').value.trim();
+      const text = root.querySelector('[data-simple-input]').value;
+      const result = await runRegexSafely(pattern, flags, text);
+      const lines = result.matches.map((match, index) => {
+        const value = match.value || '∅';
+        const groups = match.groups.length ? ` · qruplar: ${match.groups.map((group) => group ?? '∅').join(', ')}` : '';
+        return `${index + 1}. ${value} — indeks ${match.index}${groups}`;
+      });
+      if (result.truncated) lines.push('Nəticə ilk 1000 uyğunluqla məhdudlaşdırıldı.');
+      resultText(ctx, lines.join('\n') || 'Uyğunluq tapılmadı.');
+    } catch (error) { ctx.showResult('', userMessage(error, 'Regex sintaksisini yoxlayın.')); }
+    finally { setBusy(run, status); }
+  };
+  else if (tool.kind === 'percentage') {
+    const mode = root.querySelector('[data-percentage-mode]');
+    const syncLabels = () => {
+      root.querySelector('[data-a-label]').textContent = mode.value === 'part' ? 'Ədəd' : 'İlkin dəyər';
+      root.querySelector('[data-b-label]').textContent = mode.value === 'part' ? 'Faiz' : 'Son dəyər';
+    };
+    mode.onchange = syncLabels; syncLabels();
+    run.onclick = () => {
+      ctx.clearResult();
+      try {
+        const result = calculatePercentage(mode.value, root.querySelector('[data-a]').value, root.querySelector('[data-b]').value);
+        if (result.mode === 'part') resultText(ctx, `${formatNumber(result.number)} ədədinin ${formatNumber(result.percent)}%-i = ${formatNumber(result.value)}`);
+        else resultText(ctx, `${formatNumber(result.from)}-dən ${formatNumber(result.to)}-yə dəyişmə: ${formatNumber(Math.abs(result.value))}% ${result.direction}`);
+      } catch (error) { ctx.showResult('', userMessage(error, 'Faiz hesablana bilmədi.')); }
+    };
+  }
+  else if (tool.kind === 'vat') run.onclick = () => {
+    ctx.clearResult();
+    try {
+      const result = calculateVat(root.querySelector('[data-a]').value, root.querySelector('[data-b]').value, root.querySelector('[data-mode]').value);
+      resultText(ctx, `ƏDV: ${formatMoney(result.vat)} ₼\nYekun: ${formatMoney(result.total)} ₼`);
+    } catch (error) { ctx.showResult('', userMessage(error, 'ƏDV hesablana bilmədi.')); }
+  };
+  else if (tool.kind === 'unit') run.onclick = () => {
+    ctx.clearResult();
+    try {
+      const value = convertLength(root.querySelector('[data-a]').value, root.querySelector('[data-from]').value, root.querySelector('[data-to]').value);
+      resultText(ctx, formatNumber(value, 8));
+    } catch (error) { ctx.showResult('', userMessage(error, 'Vahid çevrilə bilmədi.')); }
+  };
+  else if (tool.kind === 'loan') run.onclick = () => {
+    ctx.clearResult();
+    try {
+      const result = calculateLoan(root.querySelector('[data-a]').value, root.querySelector('[data-b]').value, root.querySelector('[data-c]').value);
+      resultText(ctx, `Aylıq ödəniş: ${formatMoney(result.payment)} ₼\nÜmumi ödəniş: ${formatMoney(result.total)} ₼\nFaiz məbləği: ${formatMoney(result.interest)} ₼`);
+    } catch (error) { ctx.showResult('', userMessage(error, 'Kredit hesablana bilmədi.')); }
+  };
   else if (tool.kind === 'password-check') run.onclick = () => {
     const assessment = assessPasswordStrength(root.querySelector('[data-simple-input]').value);
     if (assessment.empty) { ctx.clearResult(); ctx.showResult('', 'Parolu daxil edin.'); return; }

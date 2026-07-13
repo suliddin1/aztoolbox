@@ -294,10 +294,18 @@ function jsonErrorMessage(error, source) {
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/gu, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
 
 function renderToolPage() {
-  const slug = new URLSearchParams(location.search).get('slug') || tools[0].slug;
-  const tool = tools.find((item) => item.slug === slug) || tools[0];
-  recordRecent(tool.slug); document.title = `${tool.name} — AzToolBox`;
   const root = $('[data-tool-root]');
+  const slug = new URLSearchParams(location.search).get('slug');
+  const tool = slug ? tools.find((item) => item.slug === slug) : null;
+  if (!tool) {
+    document.title = 'Alət tapılmadı — AzToolBox';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Sorğu edilən AzToolBox aləti tapılmadı.');
+    root.dataset.toolNotFound = '';
+    root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>Tapılmadı</span></nav>
+      <section class="workspace-panel" data-not-found><h1>Alət tapılmadı</h1><p>Bu ünvan heç bir mövcud alətə uyğun deyil.</p><a class="button button-primary" href="${base}/tools/">Bütün alətlərə bax</a></section>`;
+    return;
+  }
+  recordRecent(tool.slug); document.title = `${tool.name} — AzToolBox`;
   root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>${tool.name}</span></nav>
     <header class="tool-header"><div class="tool-heading category-${tool.category}">${toolIcon(tool)}<div><h1>${tool.name}</h1><p>${tool.description}</p><div class="tool-meta"><span class="badge">${tool.categoryName}</span><span class="badge badge-success">✓ Brauzerdə emal olunur</span></div></div></div><button class="favorite-button" type="button" data-favorite="${tool.slug}" aria-label="${tool.name}: ${getFavorites().includes(tool.slug) ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${getFavorites().includes(tool.slug)}">${getFavorites().includes(tool.slug) ? '★' : '☆'}</button></header>
     <div class="workspace">${toolWorkspace(tool)}</div>
