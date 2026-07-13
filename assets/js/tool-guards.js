@@ -64,13 +64,16 @@ export function validatePdfPageCount(count) {
   return count;
 }
 
-export function parsePageSelection(value, count) {
+export function parsePageSelection(value, count, options = {}) {
   validatePdfPageCount(count);
   const source = String(value).trim();
   if (!source) throw new ToolInputError('Səhifə nömrələrini daxil edin.');
   if (source.length > LIMITS.pageExpressionChars) throw new ToolInputError('Səhifə ifadəsi çox uzundur.');
 
-  const pages = new Set();
+  const preserveOrder = options.preserveOrder === true;
+  const allowDuplicates = options.allowDuplicates === true;
+  const pages = [];
+  const seen = new Set();
   const parts = source.split(',');
   if (parts.length > LIMITS.pageTokens) throw new ToolInputError(`Ən çox ${LIMITS.pageTokens} səhifə ifadəsi qəbul edilir.`);
   let expanded = 0;
@@ -89,9 +92,13 @@ export function parsePageSelection(value, count) {
     if (span > LIMITS.pageRange) throw new ToolInputError(`Bir aralıqda ən çox ${LIMITS.pageRange} səhifə seçilə bilər.`);
     expanded += span;
     if (expanded > LIMITS.pageRange) throw new ToolInputError(`Bir əməliyyatda ən çox ${LIMITS.pageRange} səhifə seçilə bilər.`);
-    for (let page = start; page <= end; page += 1) pages.add(page - 1);
+    for (let page = start; page <= end; page += 1) {
+      const index = page - 1;
+      if (allowDuplicates || !seen.has(index)) pages.push(index);
+      seen.add(index);
+    }
   }
-  return [...pages].sort((left, right) => left - right);
+  return preserveOrder ? pages : pages.sort((left, right) => left - right);
 }
 
 export function validateTextLength(value, limit = LIMITS.textChars) {

@@ -205,7 +205,15 @@ test('Image-to-PDF rejects unsafe input before embed, stays atomic and recovers'
       input.files = transfer.files;
       input.dispatchEvent(new Event('change'));
       runButton.click();
-      await new Promise((resolve) => setTimeout(resolve, 140));
+      await new Promise((resolve, reject) => {
+        const started = performance.now();
+        const poll = () => {
+          if (!runButton.hasAttribute('aria-busy') && !document.querySelector('[data-output]').hidden) return resolve();
+          if (performance.now() - started > 3000) return reject(new Error('Image-to-PDF attempt timed out'));
+          setTimeout(poll, 20);
+        };
+        poll();
+      });
       return {
         text: document.querySelector('[data-output]').innerText,
         buttons: document.querySelectorAll('[data-output] button').length,
@@ -304,8 +312,8 @@ test('PDF page grammar rejects unsafe input atomically and accepts valid input a
   assert.match(result.partial, /abc/u);
   assert.match(result.huge, /1-5/u);
   assert.match(result.valid, /uğurla tamamlandı/u);
-  assert.equal(result.pages, 2);
-  assert.deepEqual(result.sizes, [{ width: 100, height: 200 }, { width: 102, height: 202 }]);
+  assert.equal(result.pages, 3);
+  assert.deepEqual(result.sizes, [{ width: 102, height: 202 }, { width: 100, height: 200 }, { width: 102, height: 202 }]);
   assert.deepEqual(errors, []);
   await page.close();
 });

@@ -13,6 +13,7 @@ import {
   runRegexSafely,
   timestampToDate,
 } from './batch3-tools.js';
+import { createStoredZip, imageExtension, imageOutputType } from './batch4-tools.js';
 import {
   LIMITS,
   ToolInputError,
@@ -38,8 +39,11 @@ const transformKinds = new Set(['text-case', 'line-sort', 'line-unique', 'space-
 
 export function simpleToolWorkspace(tool) {
   if (pdfKinds.has(tool.kind)) {
-    const pageField = tool.kind === 'pdf-clean' ? '<p class="privacy-note"><span aria-hidden="true">⌁</span>Müəllif, proqram, tarix və digər sənəd məlumatları silinəcək; səhifədə görünən mətn dəyişməyəcək.</p>' : `<div class="field"><label for="page-list">Səhifələr</label><input class="input" id="page-list" maxlength="${LIMITS.pageExpressionChars}" data-page-list placeholder="Məsələn: 1, 3-5" /><span class="field-hint">Səhifələri vergül və aralıqla göstərin.</span></div>`;
-    const label = tool.kind === 'pdf-remove' ? 'Səhifələri sil' : tool.kind === 'pdf-clean' ? 'Metadata-nı təmizlə' : 'Yeni PDF yarat';
+    const pageHint = tool.kind === 'pdf-split' ? 'Sıra və təkrarlar saxlanılır; hər səhifə ayrıca PDF kimi ZIP-ə əlavə edilir.'
+      : tool.kind === 'pdf-extract' ? 'Sıra və təkrarlar yeni PDF-də yazdığınız kimi saxlanılır.'
+        : 'Təkrar səhifələr bir dəfə silinir.';
+    const pageField = tool.kind === 'pdf-clean' ? '<p class="privacy-note"><span aria-hidden="true">⌁</span>Müəllif, proqram, tarix və digər sənəd məlumatları silinəcək; səhifədə görünən mətn dəyişməyəcək.</p>' : `<div class="field"><label for="page-list">Səhifələr</label><input class="input" id="page-list" maxlength="${LIMITS.pageExpressionChars}" data-page-list placeholder="Məsələn: 1, 3-5" /><span class="field-hint">${pageHint}</span></div>`;
+    const label = tool.kind === 'pdf-remove' ? 'Səhifələri sil' : tool.kind === 'pdf-clean' ? 'Metadata-nı təmizlə' : tool.kind === 'pdf-split' ? 'PDF-ləri ZIP-də yarat' : 'Yeni PDF yarat';
     return `${inputPanel(`${upload('application/pdf', false, 'PDF faylını seçin', 'Fayl cihazınızda emal olunur', 'data-simple-file')}${pageField}`, actions(label, 'data-simple-run'))}${resultPanel()}`;
   }
   if (tool.kind === 'image-pdf') return `${inputPanel(upload('image/png,image/jpeg,image/webp', true, 'Şəkilləri seçin', 'PNG, JPG və WebP · bir neçə fayl seçilə bilər', 'data-simple-files'), actions('PDF yarat', 'data-simple-run'))}${resultPanel()}`;
@@ -49,7 +53,8 @@ export function simpleToolWorkspace(tool) {
     if (tool.kind === 'image-convert') options = '<div class="field"><label>Çıxış formatı</label><select class="select" data-format><option value="image/webp">WebP</option><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></div>';
     if (tool.kind === 'image-crop') options = '<div class="check-row"><div class="field"><label>En</label><input class="input" type="number" min="1" data-crop-width /></div><div class="field"><label>Hündürlük</label><input class="input" type="number" min="1" data-crop-height /></div></div>';
     if (tool.kind === 'image-rotate') options = '<div class="field"><label>Döndərmə</label><select class="select" data-angle><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>';
-    return `${inputPanel(`${upload('image/png,image/jpeg,image/webp', false, 'Şəkli seçin', 'PNG, JPG və WebP', 'data-simple-file')}${options}`, actions('Şəkli hazırla', 'data-simple-run'))}${resultPanel()}`;
+    const formatNote = tool.kind === 'image-convert' ? 'Çıxış seçdiyiniz formatda yaradılır.' : 'Statik PNG, JPG və WebP çıxışında mənbə formatı saxlanılır.';
+    return `${inputPanel(`${upload('image/png,image/jpeg,image/webp', false, 'Şəkli seçin', 'PNG, JPG və WebP', 'data-simple-file')}${options}<p class="privacy-note"><span aria-hidden="true">⌁</span>${formatNote} Animasiyalı girişlər rədd edilir.</p>`, actions('Şəkli hazırla', 'data-simple-run'))}${resultPanel()}`;
   }
   if (transformKinds.has(tool.kind)) {
     const options = tool.kind === 'text-case' ? '<div class="field"><label>Çevirmə</label><select class="select" data-mode><option value="upper">BÖYÜK HƏRF</option><option value="lower">kiçik hərf</option><option value="title">Başlıq Forması</option><option value="sentence">Cümlə forması</option></select></div>' : tool.kind === 'line-sort' ? '<div class="field"><label>Sıra</label><select class="select" data-mode><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' : '';
@@ -74,13 +79,14 @@ export function simpleToolWorkspace(tool) {
   return null;
 }
 
-function setupFile(root, multiple = false) {
+function setupFile(root, multiple = false, onChange = () => {}) {
   const input = root.querySelector(multiple ? '[data-simple-files]' : '[data-simple-file]');
   const list = root.querySelector('[data-selected-files]');
   let files = [];
   const set = (incoming) => {
     files = [...(incoming instanceof FileList ? incoming : [incoming])].filter(Boolean);
     list.innerHTML = files.map((file) => `<div class="file-row"><span>${escapeMarkup(file.name)}</span><span>${(file.size / 1024).toFixed(0)} KB</span></div>`).join('');
+    onChange();
   };
   input.addEventListener('change', () => set(input.files));
   const zone = input.closest('[data-drop-zone]');
@@ -107,8 +113,9 @@ function resultText(ctx, value, label = 'Nəticə') {
   document.querySelector('[data-copy-simple]').onclick = (event) => ctx.copyText(value, event.currentTarget);
 }
 
-async function imageFrom(file) {
-  const url = URL.createObjectURL(file); const image = new Image();
+async function imageFrom(file, sourceInfo) {
+  const source = sourceInfo && file.type !== sourceInfo.type ? new Blob([await file.arrayBuffer()], { type: sourceInfo.type }) : file;
+  const url = URL.createObjectURL(source); const image = new Image();
   try {
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url; });
     return image;
@@ -178,17 +185,19 @@ export function initSimpleTool(tool, ctx) {
   });
 
   if (pdfKinds.has(tool.kind)) {
-    const files = setupFile(root);
+    const files = setupFile(root, false, ctx.clearResult);
     const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
     button.onclick = async () => {
       const file = files()[0]; if (!file) return ctx.showResult('', 'PDF faylını seçin.');
-      ctx.clearResult();
+      const operation = ctx.beginOperation();
       setBusy(button, status, 'PDF hazırlanır…');
       try {
         validateFileSet([file], { fileBytes: LIMITS.pdfFileBytes });
         const sourceBytes = await file.arrayBuffer();
+        if (!ctx.isCurrent(operation)) return;
         if (tool.kind === 'pdf-clean') {
           const cleanedBytes = await cleanPdfMetadata(PDFLib, sourceBytes);
+          if (!ctx.isCurrent(operation)) return;
           validateGeneratedSize(cleanedBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
           const blob = new Blob([cleanedBytes], { type: 'application/pdf' });
           ctx.showResult('<p>Metadata silindi; səhifə məzmunu dəyişdirilmədi.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
@@ -196,71 +205,102 @@ export function initSimpleTool(tool, ctx) {
           return;
         }
         const source = await PDFLib.PDFDocument.load(sourceBytes, { updateMetadata: false });
+        if (!ctx.isCurrent(operation)) return;
         validatePdfPageCount(source.getPageCount());
         let indices = [...source.getPageIndices()];
-        const selected = parsePageSelection(root.querySelector('[data-page-list]').value, source.getPageCount());
+        const ordered = tool.kind === 'pdf-split' || tool.kind === 'pdf-extract';
+        const selected = parsePageSelection(root.querySelector('[data-page-list]').value, source.getPageCount(), { preserveOrder: ordered, allowDuplicates: ordered });
         indices = tool.kind === 'pdf-remove' ? indices.filter((index) => !selected.includes(index)) : selected;
         if (!indices.length) throw new ToolInputError('Nəticədə ən azı bir səhifə qalmalıdır.');
+        if (tool.kind === 'pdf-split') {
+          const occurrences = new Map();
+          const entries = [];
+          for (const index of indices) {
+            const output = await PDFLib.PDFDocument.create();
+            const [copied] = await output.copyPages(source, [index]); output.addPage(copied);
+            const bytes = await output.save();
+            if (!ctx.isCurrent(operation)) return;
+            validateGeneratedSize(bytes.length, LIMITS.pdfFileBytes, 'PDF səhifə nəticəsi');
+            const count = (occurrences.get(index) || 0) + 1; occurrences.set(index, count);
+            entries.push({ name: `sehife-${index + 1}${count > 1 ? `-${count}` : ''}.pdf`, data: bytes });
+          }
+          if (!ctx.isCurrent(operation)) return;
+          const zipBytes = createStoredZip(entries);
+          validateGeneratedSize(zipBytes.length, LIMITS.totalFileBytes, 'ZIP nəticəsi');
+          const blob = new Blob([zipBytes], { type: 'application/zip' });
+          const baseName = file.name.replace(/\.[^.]+$/u, '') || 'sened';
+          ctx.showResult(`<p>${indices.length} ayrıca PDF ZIP paketində hazırdır.</p><button class="button button-primary" data-download-simple>ZIP-i endir</button>`, 'success');
+          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${baseName}-sehifeler.zip`);
+          return;
+        }
         const output = await PDFLib.PDFDocument.create();
         const copied = await output.copyPages(source, indices); copied.forEach((page) => output.addPage(page));
         const outputBytes = await output.save();
+        if (!ctx.isCurrent(operation)) return;
         validateGeneratedSize(outputBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
         const blob = new Blob([outputBytes], { type: 'application/pdf' });
         ctx.showResult('<p>Yeni PDF hazırdır.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
         root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${tool.slug}.pdf`);
-      } catch (error) { ctx.showResult('', userMessage(error, 'PDF emal edilə bilmədi. Faylın sağlam olduğunu yoxlayın.')); }
+      } catch (error) { if (ctx.isCurrent(operation)) ctx.showResult('', userMessage(error, 'PDF emal edilə bilmədi. Faylın sağlam olduğunu yoxlayın.')); }
       finally { setBusy(button, status); }
     };
     return true;
   }
 
   if (tool.kind === 'image-pdf') {
-    const files = setupFile(root, true);
+    const files = setupFile(root, true, ctx.clearResult);
     const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
     button.onclick = async () => {
       const selected = files(); if (!selected.length) return ctx.showResult('', 'Ən azı bir şəkil seçin.');
-      ctx.clearResult();
+      const operation = ctx.beginOperation();
       setBusy(button, status, `${selected.length} şəkil hazırlanır…`);
       try {
         validateFileSet(selected, { fileBytes: LIMITS.imageFileBytes });
         validatePdfPageCount(selected.length);
         const inspected = [];
-        for (const file of selected) inspected.push({ file, info: await inspectImageForPdf(file) });
+        for (const file of selected) {
+          inspected.push({ file, info: await inspectImageForPdf(file) });
+          if (!ctx.isCurrent(operation)) return;
+        }
         const pdf = await PDFLib.PDFDocument.create();
         for (const [index, entry] of inspected.entries()) {
           status.textContent = `${index + 1}/${selected.length} şəkil əlavə olunur`;
           const raster = await rasterizeImageForPdf(entry.file, entry.info);
+          if (!ctx.isCurrent(operation)) return;
           const embedded = await pdf.embedPng(raster.bytes);
           const page = pdf.addPage([raster.width, raster.height]);
           page.drawImage(embedded, { x: 0, y: 0, width: raster.width, height: raster.height });
         }
         const outputBytes = await pdf.save();
+        if (!ctx.isCurrent(operation)) return;
         validateGeneratedSize(outputBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
         const blob = new Blob([outputBytes], { type:'application/pdf' });
         ctx.showResult('<p>Şəkillər PDF sənədinə çevrildi.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
         root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, 'sekiller.pdf');
-      } catch (error) { ctx.showResult('', userMessage(error, 'Şəkillər PDF-ə çevrilə bilmədi.')); }
+      } catch (error) { if (ctx.isCurrent(operation)) ctx.showResult('', userMessage(error, 'Şəkillər PDF-ə çevrilə bilmədi.')); }
       finally { setBusy(button, status); }
     };
     return true;
   }
 
   if (imageKinds.has(tool.kind)) {
-    const files = setupFile(root); let outputBlob;
+    const files = setupFile(root, false, ctx.clearResult); let outputBlob;
     const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
     const quality = root.querySelector('[data-quality]');
     if (quality) quality.oninput = () => { root.querySelector('[data-quality-label]').textContent = `${quality.value}%`; };
     button.onclick = async () => {
       const file = files()[0]; if (!file) return ctx.showResult('', 'Şəkli seçin.');
-      ctx.clearResult();
+      const operation = ctx.beginOperation();
       setBusy(button, status, 'Şəkil hazırlanır…');
       try {
         validateFileSet([file], { fileBytes: LIMITS.imageFileBytes });
         const sourceInfo = await inspectImageFile(file);
-        if (tool.kind === 'image-compress' && sourceInfo.animated) {
+        if (!ctx.isCurrent(operation)) return;
+        if (sourceInfo.animated) {
           throw new ToolInputError('Bu alət animasiyanı saxlamır. Statik PNG, JPG və ya WebP seçin.');
         }
-        const image = await imageFrom(file);
+        const image = await imageFrom(file, sourceInfo);
+        if (!ctx.isCurrent(operation)) return;
         validateImageDimensions(image.naturalWidth, image.naturalHeight);
         let width = image.naturalWidth; let height = image.naturalHeight; let angle = 0;
         if (tool.kind === 'image-crop') { width = Math.min(width, Number(root.querySelector('[data-crop-width]').value) || width); height = Math.min(height, Number(root.querySelector('[data-crop-height]').value) || height); }
@@ -271,15 +311,18 @@ export function initSimpleTool(tool, ctx) {
         if (tool.kind === 'image-rotate') { c.translate(width/2,height/2); c.rotate(angle*Math.PI/180); c.drawImage(image,-image.naturalWidth/2,-image.naturalHeight/2); }
         else if (tool.kind === 'image-crop') { const sx=(image.naturalWidth-width)/2, sy=(image.naturalHeight-height)/2; c.drawImage(image,sx,sy,width,height,0,0,width,height); }
         else c.drawImage(image,0,0,width,height);
-        const type = tool.kind === 'image-convert' ? root.querySelector('[data-format]').value : tool.kind === 'image-compress' ? sourceInfo.type : 'image/png';
+        const type = imageOutputType(tool.kind, sourceInfo.type, root.querySelector('[data-format]')?.value);
         const q = tool.kind === 'image-compress' ? Number(quality.value)/100 : .92;
         outputBlob = await new Promise((resolve) => canvas.toBlob(resolve,type,q));
+        if (!ctx.isCurrent(operation)) return;
         if (!outputBlob?.size) throw new ToolInputError('Brauzer şəkil çıxışını yarada bilmədi.');
         if (outputBlob.size > LIMITS.imageFileBytes) throw new ToolInputError(`Nəticə ${formatBytes(LIMITS.imageFileBytes)} həddini aşır.`);
-        const outputInfo = await inspectImageFile(new File([outputBlob], `output.${sourceInfo.extension}`, { type: outputBlob.type }));
+        const extension = imageExtension(type);
+        const outputInfo = await inspectImageFile(new File([outputBlob], `output.${extension}`, { type: outputBlob.type }));
         if (outputInfo.type !== type) throw new ToolInputError('Brauzer seçilmiş çıxış formatını dəstəkləmir.');
         if (outputInfo.width !== width || outputInfo.height !== height) throw new ToolInputError('Şəkil çıxışının ölçüləri gözlənilən nəticəyə uyğun deyil.');
-        const url = URL.createObjectURL(outputBlob);
+        if (!ctx.isCurrent(operation)) return;
+        const url = ctx.createPreviewUrl(outputBlob);
         if (tool.kind === 'image-compress') {
           const format = sourceInfo.extension === 'jpg' ? 'JPG' : sourceInfo.extension.toUpperCase();
           const sizes = `<p>Orijinal: ${formatBytes(file.size)} · Yeni: ${formatBytes(outputBlob.size)}</p>`;
@@ -293,9 +336,9 @@ export function initSimpleTool(tool, ctx) {
           }
         } else {
           ctx.showResult(`<img class="image-preview" src="${url}" alt="Hazır şəkil" /><p>${formatBytes(outputBlob.size)}</p><button class="button button-primary" data-download-simple>Şəkli endir</button>`, 'success');
-          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(outputBlob, `${tool.slug}.${type.split('/')[1].replace('jpeg','jpg')}`);
+          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(outputBlob, `${tool.slug}.${extension}`);
         }
-      } catch (error) { ctx.showResult('', userMessage(error, 'Şəkil emal edilə bilmədi.')); }
+      } catch (error) { if (ctx.isCurrent(operation)) ctx.showResult('', userMessage(error, 'Şəkil emal edilə bilmədi.')); }
       finally { setBusy(button, status); }
     };
     return true;
@@ -315,7 +358,7 @@ export function initSimpleTool(tool, ctx) {
   else if (tool.kind === 'text-diff') run.onclick = () => { const left=root.querySelector('[data-left]').value.split(/\r?\n/u), right=root.querySelector('[data-right]').value.split(/\r?\n/u); const out=[]; const max=Math.max(left.length,right.length); for(let i=0;i<max;i+=1){if(left[i]===right[i]) out.push(`  ${left[i]??''}`); else { if(left[i]!=null) out.push(`− ${left[i]}`); if(right[i]!=null) out.push(`+ ${right[i]}`); }} resultText(ctx,out.join('\n'),'Fərq'); };
   else if (['base64','url-codec'].includes(tool.kind)) { const input=()=>root.querySelector('[data-simple-input]').value; root.querySelector('[data-encode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?btoa(unescape(encodeURIComponent(input()))):encodeURIComponent(input()));}catch{ctx.showResult('','Mətn kodlana bilmədi.');}}; root.querySelector('[data-decode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?decodeURIComponent(escape(atob(input()))):decodeURIComponent(input()));}catch{ctx.showResult('','Məlumat geri açıla bilmədi.');}}; }
   else if (tool.kind === 'jwt') run.onclick = () => { try { const parts=root.querySelector('[data-simple-input]').value.split('.'); const decode=(p)=>JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/gu,'+').replace(/_/gu,'/'))))); resultText(ctx,JSON.stringify({header:decode(parts[0]),payload:decode(parts[1])},null,2)); } catch { ctx.showResult('','JWT formatı düzgün deyil.'); } };
-  else if (tool.kind === 'hash') run.onclick = async () => { const bytes=new TextEncoder().encode(root.querySelector('[data-simple-input]').value); const hash=await crypto.subtle.digest(root.querySelector('[data-algorithm]').value,bytes); resultText(ctx,[...new Uint8Array(hash)].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
+  else if (tool.kind === 'hash') run.onclick = async () => { const operation = ctx.beginOperation(); const bytes=new TextEncoder().encode(root.querySelector('[data-simple-input]').value); const hash=await crypto.subtle.digest(root.querySelector('[data-algorithm]').value,bytes); if (!ctx.isCurrent(operation)) return; resultText(ctx,[...new Uint8Array(hash)].map((b)=>b.toString(16).padStart(2,'0')).join('')); };
   else if (tool.kind === 'uuid') run.onclick = () => resultText(ctx,Array.from({length:Math.min(50,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>crypto.randomUUID()).join('\n'));
   else if (tool.kind === 'timestamp') run.onclick = () => {
     ctx.clearResult();
@@ -337,7 +380,7 @@ export function initSimpleTool(tool, ctx) {
     } catch (error) { ctx.showResult('', userMessage(error, 'Timestamp çevrilə bilmədi.')); }
   };
   else if (tool.kind === 'regex') run.onclick = async () => {
-    ctx.clearResult();
+    const operation = ctx.beginOperation();
     const status = root.querySelector('[data-processing-status]');
     setBusy(run, status, 'Regex yoxlanılır…');
     try {
@@ -345,6 +388,7 @@ export function initSimpleTool(tool, ctx) {
       const flags = root.querySelector('[data-flags]').value.trim();
       const text = root.querySelector('[data-simple-input]').value;
       const result = await runRegexSafely(pattern, flags, text);
+      if (!ctx.isCurrent(operation)) return;
       const lines = result.matches.map((match, index) => {
         const value = match.value || '∅';
         const groups = match.groups.length ? ` · qruplar: ${match.groups.map((group) => group ?? '∅').join(', ')}` : '';
@@ -352,7 +396,7 @@ export function initSimpleTool(tool, ctx) {
       });
       if (result.truncated) lines.push('Nəticə ilk 1000 uyğunluqla məhdudlaşdırıldı.');
       resultText(ctx, lines.join('\n') || 'Uyğunluq tapılmadı.');
-    } catch (error) { ctx.showResult('', userMessage(error, 'Regex sintaksisini yoxlayın.')); }
+    } catch (error) { if (ctx.isCurrent(operation)) ctx.showResult('', userMessage(error, 'Regex sintaksisini yoxlayın.')); }
     finally { setBusy(run, status); }
   };
   else if (tool.kind === 'percentage') {
