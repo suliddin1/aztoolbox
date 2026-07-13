@@ -409,8 +409,14 @@ test('compressor preserves JPEG/WebP MIME, signature, dimensions, alpha and down
       document.querySelector('[data-quality]').dispatchEvent(new Event('input'));
       const start = created.length;
       document.querySelector('[data-simple-run]').click();
-      await new Promise((resolve) => setTimeout(resolve, 180));
-      const candidate = created.slice(start).filter((blob) => !(blob instanceof File)).at(-1);
+      const deadline = performance.now() + 3000;
+      let candidate;
+      while (performance.now() < deadline) {
+        candidate = created.slice(start).filter((blob) => !(blob instanceof File)).at(-1);
+        if (candidate && document.querySelector('[data-simple-run]').getAttribute('aria-busy') !== 'true') break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      if (!candidate) throw new Error(`Compressor did not publish a ${type} result`);
       const bytes = new Uint8Array(await candidate.arrayBuffer());
       const bitmap = await createImageBitmap(candidate);
       const check = document.createElement('canvas'); check.width = bitmap.width; check.height = bitmap.height;
@@ -461,21 +467,31 @@ test('compressor fails closed for null Blob and MIME fallback output', async () 
       input.files = transfer.files; input.dispatchEvent(new Event('change'));
     };
     const originalToBlob = HTMLCanvasElement.prototype.toBlob;
+    const waitForAttempt = () => new Promise((resolve, reject) => {
+      const started = performance.now();
+      const poll = () => {
+        const run = document.querySelector('[data-simple-run]'); const output = document.querySelector('[data-output]');
+        if (!run.hasAttribute('aria-busy') && !output.hidden) return resolve();
+        if (performance.now() - started > 3000) return reject(new Error('Compressor attempt timed out'));
+        setTimeout(poll, 20);
+      };
+      poll();
+    });
 
     choose(png, 'source.png', 'image/png');
     document.querySelector('[data-simple-run]').click();
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await waitForAttempt();
     const priorResultHadButtons = document.querySelectorAll('[data-output] button').length > 0;
     HTMLCanvasElement.prototype.toBlob = function toBlob(callback) { callback(null); };
     document.querySelector('[data-simple-run]').click();
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await waitForAttempt();
     const nullOutput = document.querySelector('[data-output]').innerText;
     const nullButtons = document.querySelectorAll('[data-output] button').length;
 
     choose(webp, 'source.webp', 'image/webp');
     HTMLCanvasElement.prototype.toBlob = function toBlob(callback) { callback(png); };
     document.querySelector('[data-simple-run]').click();
-    await new Promise((resolve) => setTimeout(resolve, 80));
+    await waitForAttempt();
     const fallbackOutput = document.querySelector('[data-output]').innerText;
     HTMLCanvasElement.prototype.toBlob = originalToBlob;
     return { priorResultHadButtons, nullOutput, nullButtons, fallbackOutput };
