@@ -81,6 +81,15 @@ test('PDF tools enforce approved order, duplicate and split ZIP semantics', asyn
       }
       const input = document.querySelector('[data-simple-file]'); const transfer = new DataTransfer(); transfer.items.add(file);
       input.files = transfer.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise((resolve, reject) => {
+        const started = performance.now();
+        const poll = () => {
+          if (document.querySelector('[data-organizer-summary]') && !document.querySelector('[data-organizer-summary]').hidden) return resolve();
+          if (performance.now() - started > 3000) return reject(new Error(`load timeout: ${slug}`));
+          setTimeout(poll, 20);
+        };
+        poll();
+      });
       const field = document.querySelector('[data-page-list]'); field.value = expression; field.dispatchEvent(new Event('input', { bubbles: true }));
       document.querySelector('[data-simple-run]').click();
       await new Promise((resolve, reject) => {
@@ -130,6 +139,15 @@ test('PDF tools enforce approved order, duplicate and split ZIP semantics', asyn
       const file = new File([await source.save()], 'ordered.pdf', { type: 'application/pdf' });
       const transfer = new DataTransfer(); transfer.items.add(file);
       const input = document.querySelector('[data-simple-file]'); input.files = transfer.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise((resolve, reject) => {
+        const started = performance.now();
+        const poll = () => {
+          if (document.querySelector('[data-organizer-summary]') && !document.querySelector('[data-organizer-summary]').hidden) return resolve();
+          if (performance.now() - started > 3000) return reject(new Error(`load timeout: ${selectedSlug}`));
+          setTimeout(poll, 20);
+        };
+        poll();
+      });
       const field = document.querySelector('[data-page-list]'); field.value = '3,1,3'; field.dispatchEvent(new Event('input', { bubbles: true }));
       document.querySelector('[data-simple-run]').click();
       await new Promise((resolve) => {

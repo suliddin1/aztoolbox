@@ -1,38 +1,51 @@
-import { tools, categories, toolUrl } from './tools-data.js';
-import { readStoredList, sanitizeToolSlugs, writeStoredList } from './batch5-tools.js';
+import { categories, findToolSearchTargets, migrateToolReferences, serializeToolReferences, tools, toolUrl } from './tools-data.js';
+import { readStoredList, writeStoredList } from './batch5-tools.js';
 
 const themeKey = 'aztoolbox-theme';
 const favoriteKey = 'aztoolbox-favorites';
 const recentKey = 'aztoolbox-recent';
-const validToolSlugs = new Set(tools.map((tool) => tool.slug));
 
 export const getBase = () => document.body.dataset.base || '.';
 export const readList = (key) => readStoredList(localStorage, key);
 export const writeList = (key, value) => writeStoredList(localStorage, key, value);
-export const getFavorites = () => sanitizeToolSlugs(readList(favoriteKey), validToolSlugs);
-export const getRecent = () => sanitizeToolSlugs(readList(recentKey), validToolSlugs, 8);
-export const recordRecent = (slug) => {
-  const next = [slug, ...getRecent().filter((item) => item !== slug)].slice(0, 8);
-  writeList(recentKey, next);
+const readMigratedReferences = (key, limit = Number.POSITIVE_INFINITY) => {
+  const current = readList(key);
+  const migrated = migrateToolReferences(current, limit);
+  const stored = serializeToolReferences(migrated);
+  if (JSON.stringify(current) !== JSON.stringify(stored)) writeList(key, stored);
+  return migrated;
 };
-export const toggleFavorite = (slug) => {
-  const current = getFavorites();
-  const next = current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug];
-  writeList(favoriteKey, next);
-  document.dispatchEvent(new CustomEvent('favoriteschange', { detail: next }));
-  return next.includes(slug);
+export const getFavoriteEntries = () => readMigratedReferences(favoriteKey);
+export const getRecentEntries = () => readMigratedReferences(recentKey, 8);
+export const getFavorites = () => getFavoriteEntries().map((entry) => entry.slug);
+export const getRecent = () => getRecentEntries().map((entry) => entry.slug);
+export const recordRecent = (slug, mode = null) => {
+  const [canonical] = migrateToolReferences([mode ? { slug, mode } : slug], 1);
+  if (!canonical) return;
+  const next = [canonical, ...getRecentEntries().filter((item) => item.slug !== canonical.slug)].slice(0, 8);
+  writeList(recentKey, serializeToolReferences(next));
+};
+export const toggleFavorite = (slug, mode = null) => {
+  const [canonical] = migrateToolReferences([mode ? { slug, mode } : slug], 1);
+  if (!canonical) return false;
+  const current = getFavoriteEntries();
+  const exists = current.some((item) => item.slug === canonical.slug);
+  const next = exists ? current.filter((item) => item.slug !== canonical.slug) : [...current, canonical];
+  writeList(favoriteKey, serializeToolReferences(next));
+  document.dispatchEvent(new CustomEvent('favoriteschange', { detail: next.map((item) => item.slug) }));
+  return !exists;
 };
 
 export const toolIcon = (tool, extra = '') => `<span class="tool-icon category-${tool.category} ${extra}" aria-hidden="true">${tool.icon}</span>`;
 
-export const toolCard = (tool, base = getBase()) => {
+export const toolCard = (tool, base = getBase(), options = {}) => {
   const favorite = getFavorites().includes(tool.slug);
   return `<article class="tool-card category-${tool.category}" data-tool-card data-slug="${tool.slug}" data-category="${tool.category}" data-search="${[tool.name, tool.description, ...tool.keywords].join(' ').toLocaleLowerCase('az')}">
     <div class="tool-card-top">
       ${toolIcon(tool)}
-      <button class="favorite-button" type="button" data-favorite="${tool.slug}" aria-label="${tool.name}: ${favorite ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${favorite}">${favorite ? '★' : '☆'}</button>
+      <button class="favorite-button" type="button" data-favorite="${tool.slug}" ${options.mode ? `data-favorite-mode="${options.mode}"` : ''} aria-label="${tool.name}: ${favorite ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${favorite}">${favorite ? '★' : '☆'}</button>
     </div>
-    <h3><a href="${toolUrl(base, tool.slug)}">${tool.name}</a></h3>
+    <h3><a href="${toolUrl(base, tool.slug, options.mode)}">${tool.name}</a></h3>
     <p>${tool.description}</p>
     <div class="tool-card-footer"><span>${tool.categoryName}</span><span aria-hidden="true">→</span></div>
   </article>`;
@@ -182,13 +195,13 @@ export class AzHeader extends HTMLElement {
 
     const render = (query = '') => {
       const value = query.trim().toLocaleLowerCase('az');
-      const recent = getRecent().map((slug) => tools.find((tool) => tool.slug === slug)).filter(Boolean);
-      const starting = recent.length ? recent : tools.filter((tool) => tool.featured);
-      const matches = value ? tools.filter((tool) => [tool.name, tool.description, ...tool.keywords].join(' ').toLocaleLowerCase('az').includes(value)) : starting;
+      const recent = getRecentEntries().map((entry) => ({ ...entry, tool: tools.find((tool) => tool.slug === entry.slug) })).filter((entry) => entry.tool);
+      const starting = recent.length ? recent : tools.filter((tool) => tool.featured).map((tool) => ({ tool, mode: null }));
+      const matches = value ? findToolSearchTargets(value) : starting;
       const visible = matches.slice(0, 12);
       searchTitle.textContent = value ? 'Axtarış nəticələri' : recent.length ? 'Son istifadə' : 'Tez istifadə olunanlar';
       searchCount.textContent = value ? `${matches.length} nəticə` : '';
-      results.innerHTML = visible.length ? visible.map((tool, index) => `<a class="search-item" style="--search-index:${index}" href="${toolUrl(getBase(), tool.slug)}">${toolIcon(tool)}<span><strong>${tool.name}</strong><small>${tool.description}</small></span><b aria-hidden="true">→</b></a>`).join('') : `<div class="search-empty"><strong>Uyğun alət tapılmadı</strong><span>Başqa söz yazın və ya kateqoriyalardan seçim edin.</span><a class="button button-secondary" href="${getBase()}/tools/">Bütün alətlərə bax</a></div>`;
+      results.innerHTML = visible.length ? visible.map(({ tool, mode }, index) => `<a class="search-item" style="--search-index:${index}" href="${toolUrl(getBase(), tool.slug, mode)}">${toolIcon(tool)}<span><strong>${tool.name}</strong><small>${tool.description}</small></span><b aria-hidden="true">→</b></a>`).join('') : `<div class="search-empty"><strong>Uyğun alət tapılmadı</strong><span>Başqa söz yazın və ya kateqoriyalardan seçim edin.</span><a class="button button-secondary" href="${getBase()}/tools/">Bütün alətlərə bax</a></div>`;
     };
     const searchMotion = (from, to, options) => searchBox.animate([
       { transform: from.transform, opacity: from.opacity, borderRadius: from.radius },
@@ -286,7 +299,7 @@ customElements.define('az-footer', AzFooter);
 document.addEventListener('click', (event) => {
   const button = event.target.closest('[data-favorite]');
   if (!button) return;
-  const active = toggleFavorite(button.dataset.favorite);
+  const active = toggleFavorite(button.dataset.favorite, button.dataset.favoriteMode || null);
   button.setAttribute('aria-pressed', String(active));
   button.setAttribute('aria-label', `${button.dataset.favorite}: ${active ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}`);
   button.textContent = active ? '★' : '☆';

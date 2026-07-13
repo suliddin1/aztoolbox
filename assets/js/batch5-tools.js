@@ -64,9 +64,7 @@ export function sanitizeToolSlugs(values, validSlugs, limit = Number.POSITIVE_IN
 
 const capabilityCopy = Object.freeze({
   pdf: 'PDF-ləri birləşdirin',
-  'pdf-split': 'səhifələri ayrıca PDF-lərə ayırın',
-  'pdf-remove': 'səhifələri silin',
-  'pdf-extract': 'seçilmiş səhifələrdən yeni PDF yaradın',
+  'pdf-organizer': 'səhifələri bölün, çıxarın və ya silin',
   'image-pdf': 'şəkilləri PDF-ə çevirin',
   'pdf-clean': 'sənəd məlumatlarını təmizləyin',
   image: 'şəkil ölçüsünü dəyişin',
@@ -81,8 +79,6 @@ const capabilityCopy = Object.freeze({
   'line-sort': 'sətirləri sıralayın',
   'line-unique': 'təkrar sətirləri silin',
   'space-clean': 'boşluqları təmizləyin',
-  slug: 'slug yaradın',
-  lorem: 'nümunə mətn yaradın',
   'text-diff': 'mətnləri müqayisə edin',
   json: 'JSON-u yoxlayın və formatlayın',
   base64: 'Base64 kodlayın',
@@ -127,7 +123,7 @@ export function canonicalToolUrl(href, slug) {
   return url.href;
 }
 
-const pdfKinds = new Set(['pdf', 'pdf-split', 'pdf-remove', 'pdf-extract', 'pdf-clean', 'image-pdf']);
+const pdfKinds = new Set(['pdf', 'pdf-organizer', 'pdf-clean', 'image-pdf']);
 
 export function requiredVendor(kind) {
   if (pdfKinds.has(kind)) return { global: 'PDFLib', file: 'pdf-lib.min.js', label: 'PDF mühərriki' };

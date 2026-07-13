@@ -1,6 +1,6 @@
 import './ambient-waves.js';
-import { tools, categories, toolUrl } from './tools-data.js';
-import { getBase, getFavorites, getRecent, recordRecent, toolCard, toolIcon } from './components.js';
+import { categories, findToolSearchTargets, resolveToolRoute, tools, toolUrl } from './tools-data.js';
+import { getBase, getFavoriteEntries, getFavorites, getRecentEntries, recordRecent, toolCard, toolIcon } from './components.js';
 import { simpleToolWorkspace, initSimpleTool } from './simple-tools.js';
 import { initMotion } from './motion.js';
 import { generateSecurePassword } from './batch2-tools.js';
@@ -84,21 +84,30 @@ function renderCatalog() {
   const render = (animate = false) => {
     const update = () => {
     const query = input.value.trim().toLocaleLowerCase('az');
-    const favorites = getFavorites();
-    const recent = getRecent();
+    const favoriteEntries = getFavoriteEntries();
+    const recentEntries = getRecentEntries();
     let list = tools.filter((tool) => activeCategory === 'all' || tool.category === activeCategory);
-    if (view === 'favorites') list = list.filter((tool) => favorites.includes(tool.slug));
-    if (view === 'recent') list = recent.map((slug) => tools.find((tool) => tool.slug === slug)).filter(Boolean);
-    if (query) list = list.filter((tool) => [tool.name, tool.description, ...tool.keywords].join(' ').toLocaleLowerCase('az').includes(query));
+    let storedTargets = null;
+    if (view === 'favorites') {
+      const allowed = new Set(list.map((tool) => tool.slug));
+      storedTargets = favoriteEntries.map((entry) => ({ ...entry, tool: tools.find((tool) => tool.slug === entry.slug) })).filter((entry) => entry.tool && allowed.has(entry.slug));
+      list = storedTargets.map((entry) => entry.tool);
+    }
+    if (view === 'recent') {
+      const allowed = new Set(list.map((tool) => tool.slug));
+      storedTargets = recentEntries.map((entry) => ({ ...entry, tool: tools.find((tool) => tool.slug === entry.slug) })).filter((entry) => entry.tool && allowed.has(entry.slug));
+      list = storedTargets.map((entry) => entry.tool);
+    }
+    const targets = query ? findToolSearchTargets(query, list) : (storedTargets || list.map((tool) => ({ tool, mode: null })));
     const category = categories.find((item) => item.id === activeCategory);
     title.textContent = view === 'favorites' ? 'Seçilmiş alətlər' : view === 'recent' ? 'Son istifadə' : category?.name || 'Bütün alətlər';
     copy.textContent = view === 'favorites' ? 'Sonra qayıtmaq üçün saxladığınız alətlər.' : view === 'recent' ? 'Ən son açdığınız alətlər.' : category ? `${category.count} aləti axtarın və ya aşağıdakı siyahıdan seçin.` : 'Tapşırığınızı yazın və ya iş sahəsinə görə süzün.';
-    grid.innerHTML = list.map((tool) => toolCard(tool, base)).join('');
+    grid.innerHTML = targets.map(({ tool, mode }) => toolCard(tool, base, { mode })).join('');
     $$('[data-tool-card]', grid).forEach((card) => { card.style.viewTransitionName = `tool-${card.dataset.slug.replace(/[^a-z0-9-]/giu, '-')}`; });
-    count.textContent = `${list.length} alət`;
-    empty.hidden = list.length > 0;
-    grid.hidden = list.length === 0;
-    if (!list.length) {
+    count.textContent = `${targets.length} alət`;
+    empty.hidden = targets.length > 0;
+    grid.hidden = targets.length === 0;
+    if (!targets.length) {
       if (query) {
         emptyTitle.textContent = 'Axtarışa uyğun alət yoxdur';
         emptyCopy.textContent = `“${input.value.trim()}” üçün nəticə tapılmadı. Daha qısa açar söz sınayın.`;
@@ -118,9 +127,9 @@ function renderCatalog() {
       }
     }
     if (recentSection && recentGrid) {
-      const recentTools = recent.map((slug) => tools.find((tool) => tool.slug === slug)).filter(Boolean).slice(0, 3);
+      const recentTools = recentEntries.map((entry) => ({ ...entry, tool: tools.find((tool) => tool.slug === entry.slug) })).filter((entry) => entry.tool).slice(0, 3);
       recentSection.hidden = recentTools.length === 0 || view !== 'all' || activeCategory !== 'all' || Boolean(query);
-      recentGrid.innerHTML = recentTools.map((tool) => toolCard(tool, base)).join('');
+      recentGrid.innerHTML = recentTools.map(({ tool, mode }) => toolCard(tool, base, { mode })).join('');
     }
     };
     if (animate && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(update);
@@ -156,7 +165,8 @@ function toolWorkspace(tool) {
   if (tool.kind === 'password') return `${commonInput}<div class="field"><label for="password-length">Uzunluq</label><div class="range-row"><input id="password-length" type="range" min="8" max="64" value="20" data-password-length /><input class="input" type="number" min="8" max="64" value="20" data-password-number aria-label="Parol uzunluğu" /></div></div><div class="field"><label>Simvol qrupları</label><div class="check-row"><label class="check-pill"><input type="checkbox" checked data-password-set="upper" /> Böyük hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="lower" /> Kiçik hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="number" /> Rəqəm</label><label class="check-pill"><input type="checkbox" checked data-password-set="symbol" /> Simvol</label></div></div><div class="workspace-actions"><button class="button button-primary" type="button" data-password-generate>Parol yarat</button></div></div>${result}`;
   if (tool.kind === 'image') return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="image/png,image/jpeg,image/webp" data-image-file /><div><span class="tool-icon category-image">IMG</span><strong>Şəkli buraya sürükləyin</strong><p>PNG, JPG və WebP · brauzerdə emal</p><span class="button button-secondary">Şəkil seç</span></div></label><div class="selected-files" data-selected-files></div><div class="check-row"><div class="field"><label for="image-width">En</label><input class="input" id="image-width" type="number" min="1" data-image-width /></div><div class="field"><label for="image-height">Hündürlük</label><input class="input" id="image-height" type="number" min="1" data-image-height /></div></div><label class="check-pill"><input type="checkbox" checked data-image-ratio /> Nisbəti qoru</label><p class="privacy-note"><span aria-hidden="true">⌁</span>Statik PNG, JPG və WebP çıxışında mənbə formatı saxlanılır; animasiyalı girişlər rədd edilir.</p><div class="workspace-actions"><button class="button button-primary" type="button" data-image-resize disabled>Ölçünü dəyiş</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
   if (tool.kind === 'qr') return `${commonInput}<div class="field"><label for="qr-input">Mətn və ya link</label><textarea class="textarea" maxlength="${LIMITS.qrBytes}" style="min-height:180px" id="qr-input" data-qr-input aria-describedby="qr-hint qr-error" placeholder="https://aztoolbox.example"></textarea><span class="field-hint" id="qr-hint">Kənar boşluqlar olduğu kimi saxlanır. Maksimum ${LIMITS.qrBytes} UTF-8 bayt.</span><span class="field-error" id="qr-error" data-field-error role="alert" hidden></span></div><div class="field"><label for="qr-size">Ölçü</label><select class="select" id="qr-size" data-qr-size><option value="192">192 px</option><option value="256" selected>256 px</option><option value="384">384 px</option></select></div><div class="workspace-actions"><button class="button button-primary" type="button" data-qr-generate>QR yarat</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
-  return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="application/pdf" multiple data-pdf-files /><div><span class="tool-icon category-pdf">PDF</span><strong>PDF-ləri buraya sürükləyin</strong><p>Bir neçə PDF seçin · fayllar cihazınızda qalır</p><span class="button button-secondary">Faylları seç</span></div></label><div class="selected-files" data-selected-files></div><p class="privacy-note"><span aria-hidden="true">⌁</span>Fayllar serverə göndərilmir; əməliyyat bu brauzerdə aparılır.</p><div class="workspace-actions"><button class="button button-primary" type="button" data-pdf-merge disabled>Birləşdir və endir</button><button class="button button-secondary" type="button" data-pdf-cancel hidden>Dayandır</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div><div class="processing-status" data-processing-status aria-live="polite"></div></div>${result}`;
+  if (tool.kind === 'pdf') return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="application/pdf" multiple data-pdf-files /><div><span class="tool-icon category-pdf">PDF</span><strong>PDF-ləri buraya sürükləyin</strong><p>Bir neçə PDF seçin · fayllar cihazınızda qalır</p><span class="button button-secondary">Faylları seç</span></div></label><div class="selected-files" data-selected-files></div><p class="privacy-note"><span aria-hidden="true">⌁</span>Fayllar serverə göndərilmir; əməliyyat bu brauzerdə aparılır.</p><div class="workspace-actions"><button class="button button-primary" type="button" data-pdf-merge disabled>Birləşdir və endir</button><button class="button button-secondary" type="button" data-pdf-cancel hidden>Dayandır</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div><div class="processing-status" data-processing-status aria-live="polite"></div></div>${result}`;
+  return null;
 }
 
 function showResult(content, status = '') {
@@ -370,22 +380,47 @@ function loadVendor(dependency) {
 
 async function renderToolPage() {
   const root = $('[data-tool-root]');
-  const slug = new URLSearchParams(location.search).get('slug');
-  const tool = slug ? tools.find((item) => item.slug === slug) : null;
-  if (!tool) {
-    document.title = 'Alət tapılmadı — AzToolBox';
-    setMetaContent('description', 'Sorğu edilən AzToolBox aləti tapılmadı. Naməlum ünvan heç bir alətə yönləndirilmədi.');
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('slug');
+  const requestedMode = params.get('mode') || null;
+  const resolved = resolveToolRoute(slug, requestedMode);
+  if (resolved.status === 'removed') {
+    document.title = `${resolved.route.name} çıxarılıb — AzToolBox`;
+    setMetaContent('description', `${resolved.route.name} artıq AzToolBox kataloqunda mövcud deyil.`);
+    setMetaContent('robots', 'noindex');
+    document.querySelector('link[rel="canonical"]')?.remove();
+    root.dataset.toolRemoved = '';
+    root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>Çıxarılıb</span></nav>
+      <section class="workspace-panel" data-removed><h1>${escapeHtml(resolved.route.name)} çıxarılıb</h1><p>${escapeHtml(resolved.route.reason)}</p><p>Bu köhnə ünvan başqa və əlaqəsiz alətə yönləndirilmir.</p><a class="button button-primary" href="${base}/tools/">Mövcud alətlərə bax</a></section>`;
+    return;
+  }
+  if (!['active', 'replaced'].includes(resolved.status)) {
+    const invalid = resolved.status === 'invalid';
+    document.title = `${invalid ? 'Etibarsız alət ünvanı' : 'Alət tapılmadı'} — AzToolBox`;
+    setMetaContent('description', invalid ? 'Sorğu edilən alət rejimi və ya köhnə ünvan etibarlı deyil.' : 'Sorğu edilən AzToolBox aləti tapılmadı. Naməlum ünvan heç bir alətə yönləndirilmədi.');
     setMetaContent('robots', 'noindex');
     document.querySelector('link[rel="canonical"]')?.remove();
     root.dataset.toolNotFound = '';
     root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>Tapılmadı</span></nav>
-      <section class="workspace-panel" data-not-found><h1>Alət tapılmadı</h1><p>Bu ünvan heç bir mövcud alətə uyğun deyil.</p><a class="button button-primary" href="${base}/tools/">Bütün alətlərə bax</a></section>`;
+      <section class="workspace-panel" data-not-found><h1>${invalid ? 'Alət ünvanı etibarsızdır' : 'Alət tapılmadı'}</h1><p>${invalid ? 'Bu rejim və ya köhnə alət keçidi etibarlı deyil.' : 'Bu ünvan heç bir mövcud alətə uyğun deyil.'}</p><a class="button button-primary" href="${base}/tools/">Bütün alətlərə bax</a></section>`;
     return;
   }
-  recordRecent(tool.slug); setToolDocumentMetadata(tool);
+  const tool = resolved.mode ? { ...resolved.tool, mode: resolved.mode } : resolved.tool;
+  const workspace = toolWorkspace(tool);
+  if (!workspace) {
+    document.title = 'Alət iş sahəsi dəstəklənmir — AzToolBox';
+    setMetaContent('description', 'Alət iş sahəsi təhlükəsiz şəkildə açıla bilmədi.');
+    setMetaContent('robots', 'noindex');
+    document.querySelector('link[rel="canonical"]')?.remove();
+    root.dataset.toolNotFound = '';
+    root.innerHTML = `<section class="workspace-panel" data-not-found><h1>Alət açıla bilmədi</h1><p>Bu alətin iş sahəsi dəstəklənmir.</p><a class="button button-primary" href="${base}/tools/">Bütün alətlərə bax</a></section>`;
+    return;
+  }
+  recordRecent(tool.slug, tool.mode || null); setToolDocumentMetadata(tool);
+  if (resolved.status === 'replaced' || requestedMode) setMetaContent('robots', 'noindex,follow');
   root.innerHTML = `<nav class="breadcrumb" aria-label="Breadcrumb"><a href="${base}/">Ana səhifə</a><span>/</span><a href="${base}/tools/">Alətlər</a><span>/</span><span>${tool.name}</span></nav>
-    <header class="tool-header"><div class="tool-heading category-${tool.category}">${toolIcon(tool)}<div><h1>${tool.name}</h1><p>${tool.description}</p><div class="tool-meta"><span class="badge">${tool.categoryName}</span><span class="badge badge-success">✓ Brauzerdə emal olunur</span></div></div></div><button class="favorite-button" type="button" data-favorite="${tool.slug}" aria-label="${tool.name}: ${getFavorites().includes(tool.slug) ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${getFavorites().includes(tool.slug)}">${getFavorites().includes(tool.slug) ? '★' : '☆'}</button></header>
-    <div class="workspace">${toolWorkspace(tool)}</div>
+    <header class="tool-header"><div class="tool-heading category-${tool.category}">${toolIcon(tool)}<div><h1>${tool.name}</h1><p>${tool.description}</p><div class="tool-meta"><span class="badge">${tool.categoryName}</span><span class="badge badge-success">✓ Brauzerdə emal olunur</span></div></div></div><button class="favorite-button" type="button" data-favorite="${tool.slug}" ${tool.mode ? `data-favorite-mode="${tool.mode}"` : ''} aria-label="${tool.name}: ${getFavorites().includes(tool.slug) ? 'seçilmişlərdən çıxar' : 'seçilmişlərə əlavə et'}" aria-pressed="${getFavorites().includes(tool.slug)}">${getFavorites().includes(tool.slug) ? '★' : '☆'}</button></header>
+    <div class="workspace">${workspace}</div>
     <section class="related-tools"><div class="section-heading"><div><h2>Oxşar alətlər</h2><p>İş axınınıza uyğun digər seçimlər.</p></div></div><div class="tool-grid">${[...tools.filter((item) => item.slug !== tool.slug && item.category === tool.category), ...tools.filter((item) => item.slug !== tool.slug && item.category !== tool.category)].slice(0,3).map((item) => toolCard(item, base)).join('')}</div></section>`;
   bindResultInvalidation(root);
   const dependency = requiredVendor(tool.kind);

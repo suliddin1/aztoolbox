@@ -34,17 +34,57 @@ const textArea = (label = 'Mətn', attr = 'data-simple-input', placeholder = 'M�
 const actions = (primary, attr, secondary = '') => `<button class="button button-primary" type="button" ${attr}>${primary}</button>${secondary}<button class="button button-ghost" type="button" data-reset>Sıfırla</button>`;
 
 const imageKinds = new Set(['image-compress', 'image-convert', 'image-crop', 'image-rotate', 'image-gray', 'image-clean']);
-const pdfKinds = new Set(['pdf-split', 'pdf-remove', 'pdf-extract', 'pdf-clean']);
-const transformKinds = new Set(['text-case', 'line-sort', 'line-unique', 'space-clean', 'slug']);
+const pdfKinds = new Set(['pdf-clean']);
+const transformKinds = new Set(['text-case', 'line-sort', 'line-unique', 'space-clean']);
+
+const pdfOrganizerModes = Object.freeze({
+  split: {
+    label: 'Böl', action: 'PDF-ləri ZIP-də yarat',
+    hint: 'Sıra və təkrarlar saxlanılır; hər seçim ayrıca bir səhifəlik PDF olur.',
+  },
+  extract: {
+    label: 'Çıxar', action: 'Seçilmiş səhifələrdən PDF yarat',
+    hint: 'Sıra və təkrarlar yazdığınız kimi saxlanılır və bir PDF-də birləşdirilir.',
+  },
+  delete: {
+    label: 'Sil', action: 'Seçilmiş səhifələri sil',
+    hint: 'Təkrar nömrələr bir dəfə sayılır; qalan səhifələrin ilkin sırası saxlanılır.',
+  },
+});
+
+const PDF_THUMBNAIL_LIMIT = 48;
+const PDF_THUMBNAIL_CONCURRENCY = 2;
+const PDF_THUMBNAIL_PIXEL_BUDGET = 8_000_000;
+let pdfThumbnailEnginePromise;
+
+function loadPdfThumbnailEngine() {
+  if (!pdfThumbnailEnginePromise) {
+    const moduleUrl = new URL('../vendor/pdfjs-6.1.200.min.js', import.meta.url);
+    pdfThumbnailEnginePromise = import(moduleUrl.href).then((engine) => {
+      engine.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdfjs-6.1.200.worker.min.js', import.meta.url).href;
+      return engine;
+    });
+  }
+  return pdfThumbnailEnginePromise;
+}
 
 export function simpleToolWorkspace(tool) {
+  if (tool.kind === 'pdf-organizer') {
+    const mode = pdfOrganizerModes[tool.mode] ? tool.mode : 'split';
+    const current = pdfOrganizerModes[mode];
+    const modeLinks = Object.entries(pdfOrganizerModes).map(([value, details]) => `<a class="mode-tab" href="?slug=pdf-organizer&amp;mode=${value}" ${value === mode ? 'aria-current="page"' : ''}>${details.label}</a>`).join('');
+    const body = `<nav class="mode-tabs" aria-label="PDF əməliyyatı">${modeLinks}</nav>
+      ${upload('application/pdf', false, 'PDF faylını seçin', 'Fayl cihazınızda emal olunur · maksimum 500 səhifə', 'data-simple-file')}
+      <div class="organizer-summary" data-organizer-summary hidden aria-live="polite"><span><strong data-page-count>0</strong> səhifə</span><span><strong data-selected-count>0</strong> seçilib</span><span data-thumbnail-status>Nömrəli önizləmə</span></div>
+      <div class="field"><label for="page-list">Səhifələr</label><input class="input" id="page-list" maxlength="${LIMITS.pageExpressionChars}" data-page-list aria-describedby="page-list-hint page-list-error" placeholder="Məsələn: 3, 1, 3 və ya 2-5" /><span class="field-hint" id="page-list-hint">${current.hint}</span><span class="field-error" id="page-list-error" data-page-error role="alert" hidden></span></div>
+      <div class="page-selection-head"><strong>Səhifə seçimi</strong><div><button class="button button-secondary" type="button" data-select-all disabled>Hamısını seç</button><button class="button button-secondary" type="button" data-clear-pages disabled>Seçimi təmizlə</button></div></div>
+      <div class="pdf-page-grid" data-page-grid aria-label="PDF səhifələri"><p class="field-hint">Fayl seçdikdən sonra səhifələr burada görünəcək.</p></div>
+      <p class="privacy-note"><span aria-hidden="true">⌁</span>PDF və yaradılan nəticələr yalnız bu brauzerdə emal olunur. Miniatürlər yalnız bu alətdə, fayl seçildikdən sonra və məhdud növbə ilə hazırlanır.</p>`;
+    return `${inputPanel(body, `<button class="button button-primary" type="button" data-simple-run disabled>${current.action}</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button>`)}${resultPanel()}`;
+  }
   if (pdfKinds.has(tool.kind)) {
-    const pageHint = tool.kind === 'pdf-split' ? 'Sıra və təkrarlar saxlanılır; hər səhifə ayrıca PDF kimi ZIP-ə əlavə edilir.'
-      : tool.kind === 'pdf-extract' ? 'Sıra və təkrarlar yeni PDF-də yazdığınız kimi saxlanılır.'
-        : 'Təkrar səhifələr bir dəfə silinir.';
-    const pageField = tool.kind === 'pdf-clean' ? '<p class="privacy-note"><span aria-hidden="true">⌁</span>Müəllif, proqram, tarix və digər sənəd məlumatları silinəcək; səhifədə görünən mətn dəyişməyəcək.</p>' : `<div class="field"><label for="page-list">Səhifələr</label><input class="input" id="page-list" maxlength="${LIMITS.pageExpressionChars}" data-page-list placeholder="Məsələn: 1, 3-5" /><span class="field-hint">${pageHint}</span></div>`;
-    const label = tool.kind === 'pdf-remove' ? 'Səhifələri sil' : tool.kind === 'pdf-clean' ? 'Metadata-nı təmizlə' : tool.kind === 'pdf-split' ? 'PDF-ləri ZIP-də yarat' : 'Yeni PDF yarat';
-    return `${inputPanel(`${upload('application/pdf', false, 'PDF faylını seçin', 'Fayl cihazınızda emal olunur', 'data-simple-file')}${pageField}`, actions(label, 'data-simple-run'))}${resultPanel()}`;
+    const privacy = '<p class="privacy-note"><span aria-hidden="true">⌁</span>Müəllif, proqram, tarix və digər sənəd məlumatları silinəcək; səhifədə görünən mətn dəyişməyəcək.</p>';
+    return `${inputPanel(`${upload('application/pdf', false, 'PDF faylını seçin', 'Fayl cihazınızda emal olunur', 'data-simple-file')}${privacy}`, actions('Metadata-nı təmizlə', 'data-simple-run'))}${resultPanel()}`;
   }
   if (tool.kind === 'image-pdf') return `${inputPanel(upload('image/png,image/jpeg,image/webp', true, 'Şəkilləri seçin', 'PNG, JPG və WebP · bir neçə fayl seçilə bilər', 'data-simple-files'), actions('PDF yarat', 'data-simple-run'))}${resultPanel()}`;
   if (imageKinds.has(tool.kind)) {
@@ -60,7 +100,6 @@ export function simpleToolWorkspace(tool) {
     const options = tool.kind === 'text-case' ? '<div class="field"><label>Çevirmə</label><select class="select" data-mode><option value="upper">BÖYÜK HƏRF</option><option value="lower">kiçik hərf</option><option value="title">Başlıq Forması</option><option value="sentence">Cümlə forması</option></select></div>' : tool.kind === 'line-sort' ? '<div class="field"><label>Sıra</label><select class="select" data-mode><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' : '';
     return `${inputPanel(`${textArea()}${options}`, actions('Emal et', 'data-simple-run'))}${resultPanel()}`;
   }
-  if (tool.kind === 'lorem') return `${inputPanel('<div class="field"><label>Abzas sayı</label><input class="input" type="number" min="1" max="12" value="3" data-count /></div>', actions('Mətn yarat', 'data-simple-run'))}${resultPanel()}`;
   if (tool.kind === 'text-diff') return `${inputPanel(`${textArea('Birinci mətn', 'data-left')}${textArea('İkinci mətn', 'data-right')}`, actions('Müqayisə et', 'data-simple-run'))}${resultPanel()}`;
   if (['base64','url-codec'].includes(tool.kind)) return `${inputPanel(textArea(), actions('Kodla', 'data-encode', '<button class="button button-secondary" type="button" data-decode>Geri aç</button>'))}${resultPanel()}`;
   if (tool.kind === 'jwt') return `${inputPanel(`${textArea('JWT token', 'data-simple-input', 'eyJ...')}<p class="privacy-note" role="note"><span aria-hidden="true">!</span>Bu alət tokeni yalnız oxuyur. İmza, bitmə tarixi və etibarlılıq yoxlanmır.</p>`, actions('Tokeni oxu', 'data-simple-run'))}${resultPanel()}`;
@@ -184,6 +223,244 @@ export function initSimpleTool(tool, ctx) {
     }, true);
   });
 
+  if (tool.kind === 'pdf-organizer') {
+    const mode = pdfOrganizerModes[tool.mode] ? tool.mode : 'split';
+    const pageInput = root.querySelector('[data-page-list]');
+    const pageError = root.querySelector('[data-page-error]');
+    const pageGrid = root.querySelector('[data-page-grid]');
+    const pageCountOutput = root.querySelector('[data-page-count]');
+    const selectedCountOutput = root.querySelector('[data-selected-count]');
+    const summary = root.querySelector('[data-organizer-summary]');
+    const thumbnailStatus = root.querySelector('[data-thumbnail-status]');
+    const selectAll = root.querySelector('[data-select-all]');
+    const clearPages = root.querySelector('[data-clear-pages]');
+    const button = root.querySelector('[data-simple-run]');
+    const status = root.querySelector('[data-processing-status]');
+    let source = null;
+    let sourceBytes = null;
+    let file = null;
+    let pageCount = 0;
+    let thumbnailGeneration = 0;
+    let thumbnailLoadingTask = null;
+    let thumbnailDocument = null;
+    const thumbnailRenderTasks = new Set();
+
+    const clearPageError = () => {
+      pageError.hidden = true;
+      pageError.textContent = '';
+      pageInput.removeAttribute('aria-invalid');
+    };
+    const setPageError = (message) => {
+      pageError.textContent = message;
+      pageError.hidden = false;
+      pageInput.setAttribute('aria-invalid', 'true');
+    };
+    const parseSelected = () => parsePageSelection(pageInput.value, pageCount, {
+      preserveOrder: mode !== 'delete',
+      allowDuplicates: mode !== 'delete',
+    });
+    const syncSelection = () => {
+      clearPageError();
+      if (!source || !pageCount) {
+        selectedCountOutput.textContent = '0';
+        pageGrid.querySelectorAll('input').forEach((control) => { control.checked = false; });
+        button.disabled = true;
+        return [];
+      }
+      if (!pageInput.value.trim()) {
+        selectedCountOutput.textContent = '0';
+        pageGrid.querySelectorAll('input').forEach((control) => { control.checked = false; });
+        button.disabled = false;
+        return [];
+      }
+      try {
+        const selected = parseSelected();
+        const selectedSet = new Set(selected);
+        selectedCountOutput.textContent = String(selected.length);
+        pageGrid.querySelectorAll('[data-page-index]').forEach((control) => { control.checked = selectedSet.has(Number(control.dataset.pageIndex)); });
+        button.disabled = false;
+        return selected;
+      } catch (error) {
+        selectedCountOutput.textContent = '0';
+        pageGrid.querySelectorAll('input').forEach((control) => { control.checked = false; });
+        button.disabled = false;
+        setPageError(userMessage(error, 'Səhifə seçimi düzgün deyil.'));
+        return [];
+      }
+    };
+    const renderPages = () => {
+      pageGrid.innerHTML = Array.from({ length: pageCount }, (_, index) => `<label class="pdf-page-card"><input type="checkbox" data-page-index="${index}" /><span class="pdf-page-sheet" aria-hidden="true"><b>${index + 1}</b><canvas data-page-thumbnail="${index}" hidden></canvas></span><span>Səhifə ${index + 1}</span></label>`).join('');
+    };
+    const stopThumbnails = () => {
+      thumbnailGeneration += 1;
+      thumbnailRenderTasks.forEach((task) => { try { task.cancel(); } catch {} });
+      thumbnailRenderTasks.clear();
+      const loadingTask = thumbnailLoadingTask;
+      const document = thumbnailDocument;
+      thumbnailLoadingTask = null; thumbnailDocument = null;
+      if (document) void document.destroy().catch(() => {});
+      else if (loadingTask) void loadingTask.destroy().catch(() => {});
+    };
+    const renderThumbnails = async (bytes) => {
+      const generation = thumbnailGeneration;
+      let rendered = 0;
+      let pixelBudget = 0;
+      thumbnailStatus.textContent = 'Miniatürlər hazırlanır…';
+      try {
+        const engine = await loadPdfThumbnailEngine();
+        if (generation !== thumbnailGeneration) return;
+        const loadingTask = engine.getDocument({ data: new Uint8Array(bytes.slice(0)), useWasm: false });
+        thumbnailLoadingTask = loadingTask;
+        const document = await loadingTask.promise;
+        if (generation !== thumbnailGeneration) { await document.destroy(); return; }
+        thumbnailDocument = document;
+        if (document.numPages !== pageCount) throw new ToolInputError('PDF səhifə önizləməsi uyğun gəlmədi.');
+        const limit = Math.min(pageCount, PDF_THUMBNAIL_LIMIT);
+        let nextPage = 1;
+        const worker = async () => {
+          while (generation === thumbnailGeneration) {
+            const pageNumber = nextPage;
+            nextPage += 1;
+            if (pageNumber > limit) return;
+            const page = await document.getPage(pageNumber);
+            if (generation !== thumbnailGeneration) { page.cleanup(); return; }
+            const original = page.getViewport({ scale: 1 });
+            const scale = Math.min(1, 112 / original.width, 132 / original.height);
+            const viewport = page.getViewport({ scale });
+            const pixels = Math.ceil(viewport.width) * Math.ceil(viewport.height);
+            if (pixelBudget + pixels > PDF_THUMBNAIL_PIXEL_BUDGET) { page.cleanup(); return; }
+            pixelBudget += pixels;
+            const canvas = pageGrid.querySelector(`[data-page-thumbnail="${pageNumber - 1}"]`);
+            const context = canvas?.getContext('2d', { alpha: false });
+            if (!canvas || !context) { page.cleanup(); continue; }
+            canvas.width = Math.max(1, Math.ceil(viewport.width));
+            canvas.height = Math.max(1, Math.ceil(viewport.height));
+            const renderTask = page.render({ canvasContext: context, viewport });
+            thumbnailRenderTasks.add(renderTask);
+            try { await renderTask.promise; }
+            catch (error) { if (error?.name !== 'RenderingCancelledException') throw error; }
+            finally { thumbnailRenderTasks.delete(renderTask); page.cleanup(); }
+            if (generation !== thumbnailGeneration) return;
+            canvas.hidden = false;
+            canvas.closest('.pdf-page-card')?.setAttribute('data-thumbnail-ready', '');
+            rendered += 1;
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(PDF_THUMBNAIL_CONCURRENCY, limit) }, () => worker()));
+        if (generation !== thumbnailGeneration) return;
+        thumbnailStatus.textContent = rendered === pageCount ? `${rendered} miniatür hazırdır` : `${rendered}/${pageCount} miniatür hazırdır`;
+      } catch {
+        if (generation === thumbnailGeneration) thumbnailStatus.textContent = 'Nömrəli önizləmə hazırdır';
+      }
+    };
+    const prepare = async (selectedFile) => {
+      const operation = ctx.beginOperation();
+      stopThumbnails();
+      source = null; sourceBytes = null; file = null; pageCount = 0;
+      pageInput.value = ''; clearPageError(); pageGrid.innerHTML = '<p class="field-hint">PDF səhifələri oxunur…</p>';
+      summary.hidden = true; selectAll.disabled = true; clearPages.disabled = true; button.disabled = true;
+      if (!selectedFile) { pageGrid.innerHTML = '<p class="field-hint">PDF faylını seçin.</p>'; return; }
+      setBusy(button, status, 'PDF səhifələri oxunur…');
+      try {
+        validateFileSet([selectedFile], { fileBytes: LIMITS.pdfFileBytes });
+        const bytes = await selectedFile.arrayBuffer();
+        if (!ctx.isCurrent(operation)) return;
+        const loaded = await PDFLib.PDFDocument.load(bytes, { updateMetadata: false });
+        if (!ctx.isCurrent(operation)) return;
+        pageCount = validatePdfPageCount(loaded.getPageCount());
+        source = loaded; sourceBytes = bytes; file = selectedFile;
+        pageCountOutput.textContent = String(pageCount); selectedCountOutput.textContent = '0';
+        summary.hidden = false; selectAll.disabled = false; clearPages.disabled = false;
+        renderPages();
+        void renderThumbnails(bytes);
+      } catch (error) {
+        if (ctx.isCurrent(operation)) {
+          pageGrid.innerHTML = '<p class="field-hint">Səhifələr göstərilə bilmədi.</p>';
+          ctx.showResult('', userMessage(error, 'PDF açıla bilmədi. Fayl zədəli, şifrəli və ya dəstəklənməyən ola bilər.'));
+        }
+      } finally {
+        if (ctx.isCurrent(operation)) { setBusy(button, status); syncSelection(); }
+      }
+    };
+    const files = setupFile(root, false, () => prepare(files()[0]));
+    addEventListener('pagehide', stopThumbnails, { once: true });
+
+    pageInput.addEventListener('input', syncSelection);
+    pageGrid.addEventListener('change', (event) => {
+      const control = event.target.closest('[data-page-index]');
+      if (!control || !pageCount) return;
+      let selected = [];
+      try { selected = parseSelected(); } catch {}
+      const page = Number(control.dataset.pageIndex) + 1;
+      const pages = selected.map((index) => index + 1);
+      const next = control.checked ? [...pages, page] : pages.filter((value) => value !== page);
+      pageInput.value = next.join(', ');
+      pageInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    selectAll.onclick = () => {
+      pageInput.value = `1-${pageCount}`;
+      pageInput.dispatchEvent(new Event('input', { bubbles: true }));
+      pageInput.focus();
+    };
+    clearPages.onclick = () => {
+      pageInput.value = '';
+      pageInput.dispatchEvent(new Event('input', { bubbles: true }));
+      pageInput.focus();
+    };
+    button.onclick = async () => {
+      if (!source || !sourceBytes || !file) return ctx.showResult('', 'PDF faylını seçin.');
+      const operation = ctx.beginOperation();
+      setBusy(button, status, 'PDF hazırlanır…');
+      try {
+        const selected = parseSelected();
+        const allIndices = [...source.getPageIndices()];
+        const indices = mode === 'delete' ? allIndices.filter((index) => !selected.includes(index)) : selected;
+        if (!indices.length) throw new ToolInputError('Bütün səhifələri silmək olmaz. Nəticədə ən azı bir səhifə qalmalıdır.');
+        if (mode === 'split') {
+          const occurrences = new Map();
+          const entries = [];
+          for (const index of indices) {
+            const output = await PDFLib.PDFDocument.create();
+            const [copied] = await output.copyPages(source, [index]);
+            output.addPage(copied);
+            const bytes = await output.save();
+            if (!ctx.isCurrent(operation)) return;
+            validateGeneratedSize(bytes.length, LIMITS.pdfFileBytes, 'PDF səhifə nəticəsi');
+            const occurrence = (occurrences.get(index) || 0) + 1;
+            occurrences.set(index, occurrence);
+            entries.push({ name: `sehife-${index + 1}${occurrence > 1 ? `-${occurrence}` : ''}.pdf`, data: bytes });
+          }
+          const zipBytes = createStoredZip(entries);
+          validateGeneratedSize(zipBytes.length, LIMITS.totalFileBytes, 'ZIP nəticəsi');
+          const blob = new Blob([zipBytes], { type: 'application/zip' });
+          const baseName = file.name.replace(/\.[^.]+$/u, '') || 'sened';
+          ctx.showResult(`<p>${indices.length} ayrıca PDF seçdiyiniz sırada ZIP paketində hazırdır.</p><button class="button button-primary" type="button" data-download-simple>ZIP-i endir</button>`, 'success');
+          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${baseName}-sehifeler.zip`);
+          return;
+        }
+        const output = await PDFLib.PDFDocument.create();
+        const copied = await output.copyPages(source, indices);
+        copied.forEach((page) => output.addPage(page));
+        const outputBytes = await output.save();
+        if (!ctx.isCurrent(operation)) return;
+        validateGeneratedSize(outputBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
+        const blob = new Blob([outputBytes], { type: 'application/pdf' });
+        const outputName = mode === 'extract' ? 'pdf-page-extractor.pdf' : 'pdf-page-remover.pdf';
+        const message = mode === 'extract' ? `${indices.length} səhifədən bir PDF hazırdır.` : `${selected.length} səhifə silindi, ${indices.length} səhifə saxlanıldı.`;
+        ctx.showResult(`<p>${message}</p><button class="button button-primary" type="button" data-download-simple>PDF-i endir</button>`, 'success');
+        root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, outputName);
+      } catch (error) {
+        if (ctx.isCurrent(operation)) {
+          ctx.showResult('', userMessage(error, 'PDF emal edilə bilmədi. Faylın sağlam olduğunu yoxlayın.'));
+          if (error instanceof ToolInputError) pageInput.focus();
+        }
+      } finally {
+        if (ctx.isCurrent(operation)) { setBusy(button, status); syncSelection(); }
+      }
+    };
+    return true;
+  }
+
   if (pdfKinds.has(tool.kind)) {
     const files = setupFile(root, false, ctx.clearResult);
     const button = root.querySelector('[data-simple-run]'); const status = root.querySelector('[data-processing-status]');
@@ -195,51 +472,11 @@ export function initSimpleTool(tool, ctx) {
         validateFileSet([file], { fileBytes: LIMITS.pdfFileBytes });
         const sourceBytes = await file.arrayBuffer();
         if (!ctx.isCurrent(operation)) return;
-        if (tool.kind === 'pdf-clean') {
-          const cleanedBytes = await cleanPdfMetadata(PDFLib, sourceBytes);
-          if (!ctx.isCurrent(operation)) return;
-          validateGeneratedSize(cleanedBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
-          const blob = new Blob([cleanedBytes], { type: 'application/pdf' });
-          ctx.showResult('<p>Metadata silindi; səhifə məzmunu dəyişdirilmədi.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
-          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${tool.slug}.pdf`);
-          return;
-        }
-        const source = await PDFLib.PDFDocument.load(sourceBytes, { updateMetadata: false });
+        const cleanedBytes = await cleanPdfMetadata(PDFLib, sourceBytes);
         if (!ctx.isCurrent(operation)) return;
-        validatePdfPageCount(source.getPageCount());
-        let indices = [...source.getPageIndices()];
-        const ordered = tool.kind === 'pdf-split' || tool.kind === 'pdf-extract';
-        const selected = parsePageSelection(root.querySelector('[data-page-list]').value, source.getPageCount(), { preserveOrder: ordered, allowDuplicates: ordered });
-        indices = tool.kind === 'pdf-remove' ? indices.filter((index) => !selected.includes(index)) : selected;
-        if (!indices.length) throw new ToolInputError('Nəticədə ən azı bir səhifə qalmalıdır.');
-        if (tool.kind === 'pdf-split') {
-          const occurrences = new Map();
-          const entries = [];
-          for (const index of indices) {
-            const output = await PDFLib.PDFDocument.create();
-            const [copied] = await output.copyPages(source, [index]); output.addPage(copied);
-            const bytes = await output.save();
-            if (!ctx.isCurrent(operation)) return;
-            validateGeneratedSize(bytes.length, LIMITS.pdfFileBytes, 'PDF səhifə nəticəsi');
-            const count = (occurrences.get(index) || 0) + 1; occurrences.set(index, count);
-            entries.push({ name: `sehife-${index + 1}${count > 1 ? `-${count}` : ''}.pdf`, data: bytes });
-          }
-          if (!ctx.isCurrent(operation)) return;
-          const zipBytes = createStoredZip(entries);
-          validateGeneratedSize(zipBytes.length, LIMITS.totalFileBytes, 'ZIP nəticəsi');
-          const blob = new Blob([zipBytes], { type: 'application/zip' });
-          const baseName = file.name.replace(/\.[^.]+$/u, '') || 'sened';
-          ctx.showResult(`<p>${indices.length} ayrıca PDF ZIP paketində hazırdır.</p><button class="button button-primary" data-download-simple>ZIP-i endir</button>`, 'success');
-          root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${baseName}-sehifeler.zip`);
-          return;
-        }
-        const output = await PDFLib.PDFDocument.create();
-        const copied = await output.copyPages(source, indices); copied.forEach((page) => output.addPage(page));
-        const outputBytes = await output.save();
-        if (!ctx.isCurrent(operation)) return;
-        validateGeneratedSize(outputBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
-        const blob = new Blob([outputBytes], { type: 'application/pdf' });
-        ctx.showResult('<p>Yeni PDF hazırdır.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
+        validateGeneratedSize(cleanedBytes.length, LIMITS.pdfFileBytes, 'PDF nəticəsi');
+        const blob = new Blob([cleanedBytes], { type: 'application/pdf' });
+        ctx.showResult('<p>Metadata silindi; səhifə məzmunu dəyişdirilmədi.</p><button class="button button-primary" data-download-simple>PDF-i endir</button>', 'success');
         root.querySelector('[data-download-simple]').onclick = () => ctx.downloadBlob(blob, `${tool.slug}.pdf`);
       } catch (error) { if (ctx.isCurrent(operation)) ctx.showResult('', userMessage(error, 'PDF emal edilə bilmədi. Faylın sağlam olduğunu yoxlayın.')); }
       finally { setBusy(button, status); }
@@ -351,10 +588,8 @@ export function initSimpleTool(tool, ctx) {
     if (tool.kind === 'line-sort') output = input.split(/\r?\n/u).sort((a,b)=>a.localeCompare(b,'az')*(root.querySelector('[data-mode]').value==='desc'?-1:1)).join('\n');
     if (tool.kind === 'line-unique') output = [...new Set(input.split(/\r?\n/u))].join('\n');
     if (tool.kind === 'space-clean') output = input.split(/\r?\n/u).map((line)=>line.trim().replace(/\s+/gu,' ')).filter(Boolean).join('\n');
-    if (tool.kind === 'slug') output = input.toLocaleLowerCase('az').normalize('NFD').replace(/[\u0300-\u036f]/gu,'').replace(/ə/gu,'e').replace(/ı/gu,'i').replace(/ş/gu,'s').replace(/ç/gu,'c').replace(/ğ/gu,'g').replace(/ö/gu,'o').replace(/ü/gu,'u').replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
     resultText(ctx, output);
   };
-  else if (tool.kind === 'lorem') run.onclick = () => { const sentence='Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer vel neque vitae sapien luctus aliquet.'; resultText(ctx, Array.from({length:Math.min(12,Math.max(1,Number(root.querySelector('[data-count]').value)||1))},()=>`${sentence} ${sentence}`).join('\n\n')); };
   else if (tool.kind === 'text-diff') run.onclick = () => { const left=root.querySelector('[data-left]').value.split(/\r?\n/u), right=root.querySelector('[data-right]').value.split(/\r?\n/u); const out=[]; const max=Math.max(left.length,right.length); for(let i=0;i<max;i+=1){if(left[i]===right[i]) out.push(`  ${left[i]??''}`); else { if(left[i]!=null) out.push(`− ${left[i]}`); if(right[i]!=null) out.push(`+ ${right[i]}`); }} resultText(ctx,out.join('\n'),'Fərq'); };
   else if (['base64','url-codec'].includes(tool.kind)) { const input=()=>root.querySelector('[data-simple-input]').value; root.querySelector('[data-encode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?btoa(unescape(encodeURIComponent(input()))):encodeURIComponent(input()));}catch{ctx.showResult('','Mətn kodlana bilmədi.');}}; root.querySelector('[data-decode]').onclick=()=>{try{resultText(ctx,tool.kind==='base64'?decodeURIComponent(escape(atob(input()))):decodeURIComponent(input()));}catch{ctx.showResult('','Məlumat geri açıla bilmədi.');}}; }
   else if (tool.kind === 'jwt') run.onclick = () => { try { const parts=root.querySelector('[data-simple-input]').value.split('.'); const decode=(p)=>JSON.parse(decodeURIComponent(escape(atob(p.replace(/-/gu,'+').replace(/_/gu,'/'))))); resultText(ctx,JSON.stringify({header:decode(parts[0]),payload:decode(parts[1])},null,2)); } catch { ctx.showResult('','JWT formatı düzgün deyil.'); } };

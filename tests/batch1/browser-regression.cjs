@@ -280,10 +280,21 @@ test('PDF page grammar rejects unsafe input atomically and accepts valid input a
     const input = document.querySelector('[data-simple-file]');
     input.files = transfer.files;
     input.dispatchEvent(new Event('change'));
+    await new Promise((resolve, reject) => {
+      const started = performance.now();
+      const poll = () => {
+        const summary = document.querySelector('[data-organizer-summary]');
+        if (summary && !summary.hidden) return resolve();
+        if (performance.now() - started > 3000) return reject(new Error('PDF organizer load timeout'));
+        setTimeout(poll, 20);
+      };
+      poll();
+    });
     const field = document.querySelector('[data-page-list]');
     const run = document.querySelector('[data-simple-run]');
     const attempt = async (value) => {
       field.value = value;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
       run.click();
       await new Promise((resolve) => setTimeout(resolve, 40));
       return document.querySelector('[data-output]').innerText;
@@ -582,7 +593,7 @@ test('all registered tool routes still render directly without page errors', asy
     await page.waitForSelector('h1');
     assert.equal(await page.$eval('h1', (heading) => heading.textContent), tool.name);
   }
-  assert.equal(tools.length, 39);
+  assert.equal(tools.length, 35);
   assert.deepEqual(errors, []);
   await page.close();
 });

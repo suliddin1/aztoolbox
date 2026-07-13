@@ -60,9 +60,9 @@ test('registry drives counts, capability copy and unique tool SEO metadata', () 
   assert.equal(categories.reduce((sum, category) => sum + category.count, 0), tools.length);
   for (const category of categories) assert.equal(category.count, tools.filter((tool) => tool.category === category.id).length);
   assert.doesNotMatch(categoryCapabilityDescription('pdf', tools), /sıx/u);
-  const splitOnly = tools.filter((tool) => tool.kind === 'pdf-split');
-  assert.match(categoryCapabilityDescription('pdf', splitOnly), /ayırın/u);
-  assert.doesNotMatch(categoryCapabilityDescription('pdf', splitOnly), /birləşdirin/u);
+  const organizerOnly = tools.filter((tool) => tool.kind === 'pdf-organizer');
+  assert.match(categoryCapabilityDescription('pdf', organizerOnly), /bölün/u);
+  assert.doesNotMatch(categoryCapabilityDescription('pdf', organizerOnly), /birləşdirin/u);
   const metadata = tools.map(toolSeo);
   assert.equal(new Set(metadata.map((entry) => entry.title)).size, tools.length);
   assert.equal(new Set(metadata.map((entry) => entry.description)).size, tools.length);
@@ -74,7 +74,7 @@ test('registry drives counts, capability copy and unique tool SEO metadata', () 
 });
 
 test('vendor contract loads only the dependency required by the current tool kind', () => {
-  assert.deepEqual(requiredVendor('pdf-split'), { global: 'PDFLib', file: 'pdf-lib.min.js', label: 'PDF mühərriki' });
+  assert.deepEqual(requiredVendor('pdf-organizer'), { global: 'PDFLib', file: 'pdf-lib.min.js', label: 'PDF mühərriki' });
   assert.deepEqual(requiredVendor('image-pdf'), { global: 'PDFLib', file: 'pdf-lib.min.js', label: 'PDF mühərriki' });
   assert.deepEqual(requiredVendor('qr'), { global: 'QRCode', file: 'qrcode.min.js', label: 'QR mühərriki' });
   for (const kind of ['json', 'text', 'percentage', 'image-clean', 'password']) assert.equal(requiredVendor(kind), null);
