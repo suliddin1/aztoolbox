@@ -3,6 +3,17 @@ import { tools, categories, toolUrl } from './tools-data.js';
 import { getBase, getFavorites, getRecent, recordRecent, toolCard, toolIcon } from './components.js';
 import { simpleToolWorkspace, initSimpleTool } from './simple-tools.js';
 import { initMotion } from './motion.js';
+import {
+  LIMITS,
+  ToolInputError,
+  inspectImageFile,
+  validateFileSet,
+  validateGeneratedSize,
+  validateImageDimensions,
+  validatePdfPageCount,
+  validateQrText,
+  validateTextLength,
+} from './tool-guards.js';
 
 const base = getBase();
 const page = document.body.dataset.page || 'home';
@@ -134,11 +145,11 @@ function toolWorkspace(tool) {
   if (simpleWorkspace) return simpleWorkspace;
   const commonInput = `<div class="workspace-panel"><h2>Giriş</h2>`;
   const result = `<section class="workspace-panel result-panel" aria-live="polite"><h2>Nəticə</h2><div class="result-empty" data-empty><div><strong>Nəticə burada görünəcək</strong><span>Soldakı məlumatı daxil edib əsas əməliyyatı başladın.</span></div></div><div class="result-output" data-output hidden></div></section>`;
-  if (tool.kind === 'json') return `${commonInput}<div class="field"><label for="json-input">JSON məlumatı</label><textarea class="textarea code" id="json-input" data-json-input aria-describedby="json-hint json-error" placeholder='{"aztoolbox": true}'></textarea><span class="field-hint" id="json-hint">Məlumat cihazınızdan kənara göndərilmir.</span><span class="field-error" id="json-error" data-field-error role="alert" hidden></span></div><div class="workspace-actions"><button class="button button-primary" type="button" data-json-format>Formatla</button><button class="button button-secondary" type="button" data-json-minify>Minify</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
-  if (tool.kind === 'text') return `${commonInput}<div class="field"><label for="text-input">Mətn</label><textarea class="textarea" id="text-input" data-text-input placeholder="Mətni buraya yazın və ya yapışdırın..."></textarea></div><div class="workspace-actions"><button class="button button-secondary" type="button" data-copy-input>Kopyala</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div><section class="workspace-panel result-panel"><h2>Canlı statistika</h2><div class="stats-grid" data-text-stats></div></section>`;
+  if (tool.kind === 'json') return `${commonInput}<div class="field"><label for="json-input">JSON məlumatı</label><textarea class="textarea code" id="json-input" maxlength="${LIMITS.textChars}" data-json-input aria-describedby="json-hint json-error" placeholder='{"aztoolbox": true}'></textarea><span class="field-hint" id="json-hint">Məlumat cihazınızdan kənara göndərilmir. Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} simvol.</span><span class="field-error" id="json-error" data-field-error role="alert" hidden></span></div><div class="workspace-actions"><button class="button button-primary" type="button" data-json-format>Formatla</button><button class="button button-secondary" type="button" data-json-minify>Minify</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
+  if (tool.kind === 'text') return `${commonInput}<div class="field"><label for="text-input">Mətn</label><textarea class="textarea" id="text-input" maxlength="${LIMITS.textChars}" data-text-input placeholder="Mətni buraya yazın və ya yapışdırın..."></textarea><span class="field-hint">Maksimum ${LIMITS.textChars.toLocaleString('az-AZ')} simvol.</span></div><div class="workspace-actions"><button class="button button-secondary" type="button" data-copy-input>Kopyala</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div><section class="workspace-panel result-panel"><h2>Canlı statistika</h2><div class="stats-grid" data-text-stats></div></section>`;
   if (tool.kind === 'password') return `${commonInput}<div class="field"><label for="password-length">Uzunluq</label><div class="range-row"><input id="password-length" type="range" min="8" max="64" value="20" data-password-length /><input class="input" type="number" min="8" max="64" value="20" data-password-number aria-label="Parol uzunluğu" /></div></div><div class="field"><label>Simvol qrupları</label><div class="check-row"><label class="check-pill"><input type="checkbox" checked data-password-set="upper" /> Böyük hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="lower" /> Kiçik hərf</label><label class="check-pill"><input type="checkbox" checked data-password-set="number" /> Rəqəm</label><label class="check-pill"><input type="checkbox" checked data-password-set="symbol" /> Simvol</label></div></div><div class="workspace-actions"><button class="button button-primary" type="button" data-password-generate>Parol yarat</button></div></div>${result}`;
   if (tool.kind === 'image') return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="image/png,image/jpeg,image/webp" data-image-file /><div><span class="tool-icon category-image">IMG</span><strong>Şəkli buraya sürükləyin</strong><p>PNG, JPG və WebP · brauzerdə emal</p><span class="button button-secondary">Şəkil seç</span></div></label><div class="selected-files" data-selected-files></div><div class="check-row"><div class="field"><label for="image-width">En</label><input class="input" id="image-width" type="number" min="1" data-image-width /></div><div class="field"><label for="image-height">Hündürlük</label><input class="input" id="image-height" type="number" min="1" data-image-height /></div></div><label class="check-pill"><input type="checkbox" checked data-image-ratio /> Nisbəti qoru</label><div class="workspace-actions"><button class="button button-primary" type="button" data-image-resize disabled>Ölçünü dəyiş</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
-  if (tool.kind === 'qr') return `${commonInput}<div class="field"><label for="qr-input">Mətn və ya link</label><textarea class="textarea" style="min-height:180px" id="qr-input" data-qr-input aria-describedby="qr-error" placeholder="https://aztoolbox.example"></textarea><span class="field-error" id="qr-error" data-field-error role="alert" hidden></span></div><div class="field"><label for="qr-size">Ölçü</label><select class="select" id="qr-size" data-qr-size><option value="192">192 px</option><option value="256" selected>256 px</option><option value="384">384 px</option></select></div><div class="workspace-actions"><button class="button button-primary" type="button" data-qr-generate>QR yarat</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
+  if (tool.kind === 'qr') return `${commonInput}<div class="field"><label for="qr-input">Mətn və ya link</label><textarea class="textarea" maxlength="${LIMITS.qrBytes}" style="min-height:180px" id="qr-input" data-qr-input aria-describedby="qr-hint qr-error" placeholder="https://aztoolbox.example"></textarea><span class="field-hint" id="qr-hint">Kənar boşluqlar olduğu kimi saxlanır. Maksimum ${LIMITS.qrBytes} UTF-8 bayt.</span><span class="field-error" id="qr-error" data-field-error role="alert" hidden></span></div><div class="field"><label for="qr-size">Ölçü</label><select class="select" id="qr-size" data-qr-size><option value="192">192 px</option><option value="256" selected>256 px</option><option value="384">384 px</option></select></div><div class="workspace-actions"><button class="button button-primary" type="button" data-qr-generate>QR yarat</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div></div>${result}`;
   return `${commonInput}<label class="upload-zone" data-drop-zone><input type="file" accept="application/pdf" multiple data-pdf-files /><div><span class="tool-icon category-pdf">PDF</span><strong>PDF-ləri buraya sürükləyin</strong><p>Bir neçə PDF seçin · fayllar cihazınızda qalır</p><span class="button button-secondary">Faylları seç</span></div></label><div class="selected-files" data-selected-files></div><p class="privacy-note"><span aria-hidden="true">⌁</span>Fayllar serverə göndərilmir; əməliyyat bu brauzerdə aparılır.</p><div class="workspace-actions"><button class="button button-primary" type="button" data-pdf-merge disabled>Birləşdir və endir</button><button class="button button-secondary" type="button" data-pdf-cancel hidden>Dayandır</button><button class="button button-ghost" type="button" data-reset>Sıfırla</button></div><div class="processing-status" data-processing-status aria-live="polite"></div></div>${result}`;
 }
 
@@ -154,6 +165,7 @@ function showResult(content, status = '') {
 function clearResult() { const output = $('[data-output]'); const empty = $('[data-empty]'); if (output) { output.hidden = true; output.innerHTML = ''; output.classList.remove('is-entering'); } if (empty) empty.hidden = false; }
 async function copyText(value, button) { await navigator.clipboard.writeText(value); const previous = button.textContent; button.textContent = 'Kopyalandı'; setTimeout(() => button.textContent = previous, 1200); }
 function downloadBlob(blob, name) { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+const userMessage = (error, fallback) => error instanceof ToolInputError ? error.message : fallback;
 
 function initToolBehavior(tool) {
   if (initSimpleTool(tool, { showResult, clearResult, copyText, downloadBlob, escapeHtml })) return;
@@ -161,7 +173,7 @@ function initToolBehavior(tool) {
     const input = $('[data-json-input]');
     const error = $('[data-field-error]');
     const clearFieldError = () => { error.hidden = true; error.textContent = ''; input.removeAttribute('aria-invalid'); };
-    const run = (minify) => { try { const value = JSON.stringify(JSON.parse(input.value), null, minify ? 0 : 2); clearFieldError(); showResult(`<button class="button button-secondary" type="button" data-copy-result>Kopyala</button><pre class="output-code">${escapeHtml(value)}</pre>`, 'success'); $('[data-copy-result]').onclick = (event) => copyText(value, event.currentTarget); } catch (reason) { const message = jsonErrorMessage(reason, input.value); error.textContent = message; error.hidden = false; input.setAttribute('aria-invalid', 'true'); input.focus(); showResult('', message); } };
+    const run = (minify) => { try { validateTextLength(input.value); const value = JSON.stringify(JSON.parse(input.value), null, minify ? 0 : 2); clearFieldError(); showResult(`<button class="button button-secondary" type="button" data-copy-result>Kopyala</button><pre class="output-code">${escapeHtml(value)}</pre>`, 'success'); $('[data-copy-result]').onclick = (event) => copyText(value, event.currentTarget); } catch (reason) { const message = reason instanceof ToolInputError ? reason.message : jsonErrorMessage(reason, input.value); error.textContent = message; error.hidden = false; input.setAttribute('aria-invalid', 'true'); input.focus(); clearResult(); showResult('', message); } };
     input.addEventListener('input', clearFieldError);
     $('[data-json-format]').onclick = () => run(false); $('[data-json-minify]').onclick = () => run(true); $('[data-reset]').onclick = () => { input.value = ''; clearFieldError(); clearResult(); };
   }
@@ -178,17 +190,62 @@ function initToolBehavior(tool) {
   }
   if (tool.kind === 'image') {
     const fileInput = $('[data-image-file]'); const width = $('[data-image-width]'); const height = $('[data-image-height]'); const ratio = $('[data-image-ratio]'); const button = $('[data-image-resize]'); let image = null; let file = null; let aspect = 1;
-    const load = (selected) => { if (!selected || !selected.type.startsWith('image/')) return; file = selected; const reader = new FileReader(); reader.onload = () => { image = new Image(); image.onload = () => { width.value = image.naturalWidth; height.value = image.naturalHeight; aspect = image.naturalWidth / image.naturalHeight; button.disabled = false; $('[data-selected-files]').innerHTML = `<div class="file-row"><span>${escapeHtml(file.name)}</span><span>${Math.round(file.size/1024)} KB</span></div>`; }; image.src = reader.result; }; reader.readAsDataURL(file); };
+    const load = async (selected) => {
+      button.disabled = true; image = null; file = null; clearResult();
+      try {
+        if (!selected) return;
+        validateFileSet([selected], { fileBytes: LIMITS.imageFileBytes });
+        await inspectImageFile(selected);
+        file = selected;
+        const reader = new FileReader();
+        reader.onerror = () => showResult('', 'Şəkil faylı oxuna bilmədi.');
+        reader.onload = () => {
+          image = new Image();
+          image.onerror = () => { image = null; file = null; button.disabled = true; showResult('', 'Şəkil emal edilə bilmədi.'); };
+          image.onload = () => {
+            try {
+              validateImageDimensions(image.naturalWidth, image.naturalHeight);
+              width.value = image.naturalWidth; height.value = image.naturalHeight; aspect = image.naturalWidth / image.naturalHeight; button.disabled = false;
+              $('[data-selected-files]').innerHTML = `<div class="file-row"><span>${escapeHtml(file.name)}</span><span>${Math.round(file.size/1024)} KB</span></div>`;
+            } catch (error) { image = null; file = null; button.disabled = true; showResult('', userMessage(error, 'Şəkil emal edilə bilmədi.')); }
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      } catch (error) { showResult('', userMessage(error, 'Şəkil emal edilə bilmədi.')); }
+    };
     fileInput.onchange = () => load(fileInput.files[0]); setupDropZone(fileInput, load);
     width.oninput = () => { if (ratio.checked) height.value = Math.max(1, Math.round(Number(width.value) / aspect)); }; height.oninput = () => { if (ratio.checked) width.value = Math.max(1, Math.round(Number(height.value) * aspect)); };
-    button.onclick = () => { if (!image) return; const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Number(width.value)); canvas.height = Math.max(1, Number(height.value)); canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); canvas.toBlob((blob) => { const url = URL.createObjectURL(blob); showResult(`<img class="image-preview" src="${url}" alt="Ölçüsü dəyişdirilmiş şəkil" /><button class="button button-primary" type="button" data-image-download>Şəkli endir</button>`, 'success'); $('[data-image-download]').onclick = () => downloadBlob(blob, `resized-${file.name.replace(/\.[^.]+$/u,'')}.png`); }, 'image/png'); };
+    button.onclick = () => { if (!image) return; try { const dimensions = validateImageDimensions(Number(width.value), Number(height.value)); const canvas = document.createElement('canvas'); canvas.width = dimensions.width; canvas.height = dimensions.height; canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); canvas.toBlob((blob) => { if (!blob?.size) { showResult('', 'Brauzer şəkil çıxışını yarada bilmədi.'); return; } if (blob.size > LIMITS.imageFileBytes) { showResult('', `Nəticə ${Math.round(LIMITS.imageFileBytes/1024/1024)} MB həddini aşır.`); return; } const url = URL.createObjectURL(blob); showResult(`<img class="image-preview" src="${url}" alt="Ölçüsü dəyişdirilmiş şəkil" /><button class="button button-primary" type="button" data-image-download>Şəkli endir</button>`, 'success'); $('[data-image-download]').onclick = () => downloadBlob(blob, `resized-${file.name.replace(/\.[^.]+$/u,'')}.png`); }, 'image/png'); } catch (error) { clearResult(); showResult('', userMessage(error, 'Şəkil emal edilə bilmədi.')); } };
     $('[data-reset]').onclick = () => location.reload();
   }
   if (tool.kind === 'qr') {
     const qrInput = $('[data-qr-input]'); const qrError = $('[data-field-error]');
     const clearQrError = () => { qrError.hidden = true; qrError.textContent = ''; qrInput.removeAttribute('aria-invalid'); };
     qrInput.addEventListener('input', clearQrError);
-    $('[data-qr-generate]').onclick = () => { const value = qrInput.value.trim(); if (!value) { const message = 'QR kod üçün mətn və ya link daxil edin.'; qrError.textContent = message; qrError.hidden = false; qrInput.setAttribute('aria-invalid', 'true'); qrInput.focus(); showResult('', message); return; } clearQrError(); if (!window.QRCode) { showResult('', 'QR mühərriki yüklənmədi. Səhifəni yeniləyin.'); return; } const size = Number($('[data-qr-size]').value); showResult('<div id="qr-output"></div><button class="button button-primary" type="button" data-qr-download>PNG endir</button>', 'success'); new QRCode($('#qr-output'), { text: value, width: size, height: size, correctLevel: QRCode.CorrectLevel.H }); $('[data-qr-download]').onclick = () => { const canvas = $('#qr-output canvas'); if (canvas) canvas.toBlob((blob) => downloadBlob(blob, 'aztoolbox-qr.png')); }; };
+    $('[data-qr-generate]').onclick = () => {
+      clearResult(); clearQrError();
+      try {
+        const value = validateQrText(qrInput.value);
+        if (!window.QRCode) throw new ToolInputError('QR mühərriki yüklənmədi. Səhifəni yeniləyin.');
+        const size = Number($('[data-qr-size]').value);
+        const staging = document.createElement('div');
+        const qr = new QRCode(staging, { text: value, width: size, height: size, correctLevel: QRCode.CorrectLevel.H });
+        const canvas = staging.querySelector('canvas');
+        if (!canvas) throw new ToolInputError('QR kod yaradıla bilmədi. Mətnin uzunluğunu azaldın.');
+        const renderedCanvas = document.createElement('canvas'); renderedCanvas.width = canvas.width; renderedCanvas.height = canvas.height;
+        renderedCanvas.getContext('2d').drawImage(canvas, 0, 0);
+        showResult('<div id="qr-output"></div><button class="button button-primary" type="button" data-qr-download>PNG endir</button>', 'success');
+        const output = $('#qr-output'); output.title = value; output.__aztoolboxQr = qr; output.append(renderedCanvas);
+        $('[data-qr-download]').onclick = () => renderedCanvas.toBlob((blob) => {
+          if (!blob?.size || blob.type !== 'image/png') { clearResult(); showResult('', 'QR PNG çıxışı yaradıla bilmədi.'); return; }
+          downloadBlob(blob, 'aztoolbox-qr.png');
+        }, 'image/png');
+      } catch (error) {
+        const message = userMessage(error, 'QR kod yaradıla bilmədi. Mətnin uzunluğunu azaldın.');
+        qrError.textContent = message; qrError.hidden = false; qrInput.setAttribute('aria-invalid', 'true'); qrInput.focus(); clearResult(); showResult('', message);
+      }
+    };
     $('[data-reset]').onclick = () => { qrInput.value = ''; clearQrError(); clearResult(); };
   }
   if (tool.kind === 'pdf') {
@@ -196,7 +253,7 @@ function initToolBehavior(tool) {
     const load = (selected) => { files = Array.from(selected instanceof FileList ? selected : [selected]).filter((file) => file?.type === 'application/pdf'); button.disabled = files.length < 2; $('[data-selected-files]').innerHTML = files.map((file, index) => `<div class="file-row"><span>${index+1}. ${escapeHtml(file.name)}</span><span>${(file.size/1024/1024).toFixed(2)} MB</span></div>`).join(''); };
     input.onchange = () => load(input.files); setupDropZone(input, (fileList) => load(fileList));
     cancel.onclick = () => { cancelRequested = true; cancel.disabled = true; progress.textContent = 'Əməliyyat dayandırılır…'; };
-    button.onclick = async () => { if (!window.PDFLib || files.length < 2) return; cancelRequested = false; cancel.disabled = false; cancel.hidden = false; button.disabled = true; button.setAttribute('aria-busy', 'true'); try { const merged = await PDFLib.PDFDocument.create(); for (const [index, file] of files.entries()) { if (cancelRequested) { progress.textContent = 'Əməliyyat dayandırıldı.'; return; } progress.textContent = `${index + 1}/${files.length} fayl hazırlanır: ${file.name}`; button.textContent = `Birləşdirilir ${index + 1}/${files.length}`; const source = await PDFLib.PDFDocument.load(await file.arrayBuffer()); const pages = await merged.copyPages(source, source.getPageIndices()); pages.forEach((page) => merged.addPage(page)); } if (cancelRequested) { progress.textContent = 'Əməliyyat dayandırıldı.'; return; } progress.textContent = 'Yeni PDF yaradılır…'; const bytes = await merged.save(); downloadBlob(new Blob([bytes], { type:'application/pdf' }), 'aztoolbox-birlesdirilmis.pdf'); progress.textContent = 'Hazırdır. Endirmə başladıldı.'; showResult(`${files.length} PDF uğurla birləşdirildi.`, 'success'); } catch { progress.textContent = ''; showResult('', 'PDF faylları birləşdirilə bilmədi. Faylların zədələnmədiyini yoxlayın.'); } finally { cancel.hidden = true; button.disabled = false; button.removeAttribute('aria-busy'); button.textContent = 'Birləşdir və endir'; } };
+    button.onclick = async () => { if (!window.PDFLib || files.length < 2) return; cancelRequested = false; cancel.disabled = false; cancel.hidden = false; button.disabled = true; button.setAttribute('aria-busy', 'true'); clearResult(); try { validateFileSet(files, { fileBytes: LIMITS.pdfFileBytes }); const merged = await PDFLib.PDFDocument.create(); let totalPages = 0; for (const [index, file] of files.entries()) { if (cancelRequested) { progress.textContent = 'Əməliyyat dayandırıldı.'; return; } progress.textContent = `${index + 1}/${files.length} fayl hazırlanır: ${file.name}`; button.textContent = `Birləşdirilir ${index + 1}/${files.length}`; const source = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false }); validatePdfPageCount(source.getPageCount()); totalPages += source.getPageCount(); if (totalPages > LIMITS.combinedPdfPages) throw new ToolInputError(`Birləşmiş PDF ən çox ${LIMITS.combinedPdfPages} səhifə ola bilər.`); const pages = await merged.copyPages(source, source.getPageIndices()); pages.forEach((page) => merged.addPage(page)); } if (cancelRequested) { progress.textContent = 'Əməliyyat dayandırıldı.'; return; } progress.textContent = 'Yeni PDF yaradılır…'; const bytes = await merged.save(); validateGeneratedSize(bytes.length, LIMITS.totalFileBytes, 'Birləşmiş PDF'); downloadBlob(new Blob([bytes], { type:'application/pdf' }), 'aztoolbox-birlesdirilmis.pdf'); progress.textContent = 'Hazırdır. Endirmə başladıldı.'; showResult(`${files.length} PDF uğurla birləşdirildi.`, 'success'); } catch (error) { progress.textContent = ''; showResult('', userMessage(error, 'PDF faylları birləşdirilə bilmədi. Faylların zədələnmədiyini yoxlayın.')); } finally { cancel.hidden = true; button.disabled = false; button.removeAttribute('aria-busy'); button.textContent = 'Birləşdir və endir'; } };
     $('[data-reset]').onclick = () => location.reload();
   }
 }

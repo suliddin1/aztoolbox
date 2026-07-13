@@ -21,7 +21,7 @@ const rawTools = [
   define('pdf-metadata-remover', 'PDF metadata təmizləyici', 'Sənədin müəllif və başlıq məlumatlarını təmizlə.', 'pdf', 'META', 'pdf-clean', ['metadata', 'privacy', 'məxfilik']),
 
   define('image-resizer', 'Şəkil ölçü dəyişdirici', 'Şəkli dəqiq piksel ölçüsünə gətir.', 'image', 'SIZE', 'image', ['resize', 'ölçü', 'png', 'jpg'], true),
-  define('image-compressor', 'Şəkil sıxışdırıcı', 'Keyfiyyəti idarə edərək fayl ölçüsünü azalt.', 'image', 'ZIP', 'image-compress', ['compress', 'sıx', 'quality'], true),
+  define('image-compressor', 'Şəkil sıxışdırıcı', 'Formatı qoruyaraq mümkün olduqda fayl ölçüsünü azalt.', 'image', 'ZIP', 'image-compress', ['compress', 'sıx', 'quality'], true),
   define('image-converter', 'Şəkil format çevirici', 'PNG, JPG və WebP arasında çevirmə et.', 'image', 'TYPE', 'image-convert', ['convert', 'format', 'webp']),
   define('image-cropper', 'Şəkil kəsici', 'Şəkli mərkəzdən istədiyin ölçüyə kəs.', 'image', 'CROP', 'image-crop', ['crop', 'kəs', 'şəkil']),
   define('image-rotator', 'Şəkil döndürücü', 'Şəkli 90°, 180° və ya 270° döndər.', 'image', 'TURN', 'image-rotate', ['rotate', 'döndür']),
